@@ -1,13 +1,11 @@
 import express from "express";
-import { loginUser, logoutUser } from "../Controllers/authController.js";
-import { sessionMiddleware } from "../Middlewares/authServices.js";
+import { loginUser, createSuperUser } from "../Controllers/authController.js";
 
 const router = express.Router();
 
 router.post("/login", loginUser);
-router.post("/logout", logoutUser);
-router.get("/protected", sessionMiddleware, (req, res) => {
-  res.json({ message: "Access granted", user: req.session.user });
-});
+
+// TODO:REMOVE THIS ONCE DEVLOPMENT IS DONE
+router.post("/create-superuser", createSuperUser);
 
 export default router;
