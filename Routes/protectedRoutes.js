@@ -2,7 +2,7 @@ import express from "express";
 import {
   sessionMiddleware,
   authorizeRoles,
-} from "../middlewares/authMiddleware.js";
+} from "../Middlewares/authMiddleware.js";
 
 const router = express.Router();
 
