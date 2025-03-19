@@ -4,8 +4,8 @@ import MongoStore from "connect-mongo";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
-import authRoutes from "./routes/auth.js";
-import protectedRoutes from "./routes/protectedRoutes.js";
+import authRoutes from "./Routes/auth.js";
+import protectedRoutes from "./Routes/protectedRoutes.js";
 
 dotenv.config();
 
@@ -61,5 +61,5 @@ app.use(
 app.use("/auth", authRoutes);
 app.use("/protected", protectedRoutes);
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
