@@ -46,7 +46,8 @@ app.use(
       maxAge: 3 * 24 * 60 * 60 * 1000, // 3 days
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      sameSite: process.env.SAME_SITE,
+      domain: process.env.DOMAIN,
     },
   })
 );
