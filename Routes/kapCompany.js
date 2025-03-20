@@ -13,20 +13,9 @@ import upload from "../Middlewares/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.post(
-  "/create-Company",
-  sessionMiddleware,
-  authorizeRoles(["admin"]),
-  upload,
-  createKapCompany
-);
+router.post("/create-Company", upload, createKapCompany);
 
-router.get(
-  "/get-Companies",
-  sessionMiddleware,
-  authorizeRoles(["admin"]),
-  getKapCompanies
-);
+router.get("/get-Companies", getKapCompanies);
 
 // router.get(
 //   "/:id",
@@ -35,18 +24,8 @@ router.get(
 //   getKapCompanyById
 // );
 
-router.put(
-  "/:id",
-  sessionMiddleware,
-  authorizeRoles(["admin"]),
-  updateKapCompany
-);
+router.put("/:id", updateKapCompany);
 
-router.delete(
-  "/:id",
-  sessionMiddleware,
-  authorizeRoles(["admin"]),
-  deleteKapCompany
-);
+router.delete("/:id", deleteKapCompany);
 
 export default router;
