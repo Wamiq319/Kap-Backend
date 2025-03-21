@@ -8,6 +8,7 @@ export const createKapCompany = async (req, res) => {
   try {
     const { governmentIntegration, adminName, mobile, username, password } =
       req.body;
+    console.log(req.body);
 
     if (
       !governmentIntegration ||
@@ -39,9 +40,7 @@ export const createKapCompany = async (req, res) => {
       company: newCompany.data,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: error.message || "Error creating company" });
+    res.status(500).json({ message: "Error creating company" });
   }
 };
 
@@ -101,7 +100,7 @@ export const getKapCompanies = async (req, res) => {
     const kapCompanies = await KapCompany.getAllCompanies();
 
     if (!kapCompanies) {
-      return res.status(404).json({ message: "No  Companies to show" });
+      return res.status(404).json({ message: "No Companies to show" });
     }
 
     res.status(200).json(kapCompanies);

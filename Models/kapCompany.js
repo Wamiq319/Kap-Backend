@@ -11,15 +11,8 @@ const kapCompanySchema = new mongoose.Schema({
 
 kapCompanySchema.statics.createCompany = async function (companyData) {
   try {
-    const existingCompany = await this.findOne({
-      username: companyData.username,
-    });
-    if (existingCompany) {
-      throw new Error("Username already taken");
-    }
-
     const newCompany = await this.create(companyData);
-    return { message: "Company created successfully", data: newCompany };
+    return { message: "Company created successfully" };
   } catch (error) {
     throw new Error(error.message || "Error creating company");
   }

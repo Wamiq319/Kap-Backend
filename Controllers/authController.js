@@ -15,7 +15,7 @@ export const loginUser = async (req, res) => {
     // Destroy old session for security
     req.session.regenerate((err) => {
       if (err) {
-        return res.status(500).json({ message: "Session error, try again" });
+        return res.status(500).json({ message: "Try again" });
       }
 
       // Store user session
@@ -30,7 +30,7 @@ export const loginUser = async (req, res) => {
         .json({ message: "Login successful", user: req.session.user });
     });
   } catch (error) {
-    res.status(401).json({ message: error.message });
+    res.status(401).json({ message: "Internal server errorr" });
   }
 };
 

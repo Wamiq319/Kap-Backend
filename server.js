@@ -8,25 +8,26 @@ import cors from "cors";
 import authRoutes from "./Routes/auth.js";
 import protectedRoutes from "./Routes/protectedRoutes.js";
 import kapRoutes from "./Routes/kapCompany.js";
+import govRoutes from "./Routes/govSector.js";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// ✅ Log every incoming request
+//  Log every incoming request
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
 
-// ✅ Connect to MongoDB
+//  Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ CORS Setup
+// CORS Setup
 const allowedOrigins = process.env.CORS_ORIGIN?.split(",");
 app.use(
   cors({
@@ -35,7 +36,7 @@ app.use(
   })
 );
 
-// ✅ Secure Session Configuration
+// Secure Session Configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -55,6 +56,7 @@ app.use(
 app.use("/auth", authRoutes);
 app.use("/protected", protectedRoutes);
 app.use("/protected/kap", kapRoutes);
+app.use("/protected/gov", govRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
