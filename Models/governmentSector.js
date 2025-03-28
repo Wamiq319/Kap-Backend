@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-const kapCompanySchema = new mongoose.Schema(
+const govSectorSchema = new mongoose.Schema(
   {
-    governmentIntegration: { type: String, required: true },
+    govSector: { type: String, required: true },
     logoImage: { type: String, required: true }, // Cloudinary URL
     adminName: { type: String, required: true },
     mobile: { type: String, required: true },
@@ -13,47 +13,55 @@ const kapCompanySchema = new mongoose.Schema(
 );
 
 // Create a new Company Entity
-kapCompanySchema.statics.createEntity = async function (entityData) {
+govSectorSchema.statics.createEntity = async function (entityData) {
   try {
     const newEntity = await this.create(entityData);
     if (newEntity) {
       return {
         success: true,
-        message: "Company Created Succesfully",
+        message: "Gov Sector Created Succesfully",
         data: null,
       };
     }
   } catch (error) {
     console.log(error);
-    return { success: false, message: "Error creating Company", data: null };
+    return { success: false, message: "Error creating GovSector", data: null };
   }
 };
 
 // Delete a Company Entity
-kapCompanySchema.statics.deleteEntity = async function (EntityId) {
+govSectorSchema.statics.deleteEntity = async function (EntityId) {
   try {
     const deletedEntity = await this.findByIdAndDelete(EntityId);
-    if (!deletedEntity) throw new Error("Company Entity not found");
-    return { success: true, message: "Company Entity deleted successfully" };
+    if (!deletedEntity) throw new Error("GovSector Entity not found");
+    return { success: true, message: "GovSector Entity deleted successfully" };
   } catch (error) {
     return { success: false, message: error.message };
   }
 };
 
 // Get all Company Entitys with their IDs and names
-kapCompanySchema.statics.getEntitiesNames = async function () {
+govSectorSchema.statics.getEntitiesNames = async function () {
   try {
-    const Entities = await this.find({}, "_id name");
+    const Entities = await this.find({}, "_id govSector");
     return {
       success: true,
-      data: Entities.map(({ _id, name }) => ({ id: _id, name })),
+      data: Entities.map(({ _id, govSector }) => ({
+        id: _id,
+        sectorName: govSector,
+      })),
+      message: null,
     };
   } catch (error) {
-    return { success: false, message: "Error while fetching company names" };
+    return {
+      success: false,
+      message: "Error while fetching govSector names",
+      data: [],
+    };
   }
 };
 
-kapCompanySchema.statics.getAllEntities = async function () {
+govSectorSchema.statics.getAllEntities = async function () {
   try {
     // Fetch all company data (complete entities)
     const Entities = await this.find({});
@@ -64,8 +72,8 @@ kapCompanySchema.statics.getAllEntities = async function () {
       message: null,
     };
   } catch (error) {
-    return { success: false, message: "Error while fetching Companies" };
+    return { success: false, message: "Error while fetching govSectors" };
   }
 };
 
-export default mongoose.model("KapCompany", kapCompanySchema);
+export default mongoose.model("GovSector", govSectorSchema);

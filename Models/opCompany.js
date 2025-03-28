@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-const kapCompanySchema = new mongoose.Schema(
+const opCompanySchema = new mongoose.Schema(
   {
-    governmentIntegration: { type: String, required: true },
+    opCompany: { type: String, required: true },
     logoImage: { type: String, required: true }, // Cloudinary URL
     adminName: { type: String, required: true },
     mobile: { type: String, required: true },
@@ -13,14 +13,14 @@ const kapCompanySchema = new mongoose.Schema(
 );
 
 // Create a new Company Entity
-kapCompanySchema.statics.createEntity = async function (entityData) {
+opCompanySchema.statics.createEntity = async function (entityData) {
   try {
     const newEntity = await this.create(entityData);
     if (newEntity) {
       return {
         success: true,
         message: "Company Created Succesfully",
-        data: null,
+        data: [],
       };
     }
   } catch (error) {
@@ -30,7 +30,7 @@ kapCompanySchema.statics.createEntity = async function (entityData) {
 };
 
 // Delete a Company Entity
-kapCompanySchema.statics.deleteEntity = async function (EntityId) {
+opCompanySchema.statics.deleteEntity = async function (EntityId) {
   try {
     const deletedEntity = await this.findByIdAndDelete(EntityId);
     if (!deletedEntity) throw new Error("Company Entity not found");
@@ -41,21 +41,29 @@ kapCompanySchema.statics.deleteEntity = async function (EntityId) {
 };
 
 // Get all Company Entitys with their IDs and names
-kapCompanySchema.statics.getEntitiesNames = async function () {
+opCompanySchema.statics.getEntitiesNames = async function () {
   try {
-    const Entities = await this.find({}, "_id name");
+    const Entities = await this.find({}, "_id opCompany");
+    console.log(Entities);
     return {
       success: true,
-      data: Entities.map(({ _id, name }) => ({ id: _id, name })),
+      data: Entities.map(({ _id, opCompany }) => ({
+        id: _id,
+        companyName: opCompany,
+      })),
+      message: null,
     };
   } catch (error) {
-    return { success: false, message: "Error while fetching company names" };
+    return {
+      success: false,
+      message: "Error while fetching opCompany names",
+      data: [],
+    };
   }
 };
 
-kapCompanySchema.statics.getAllEntities = async function () {
+opCompanySchema.statics.getAllEntities = async function () {
   try {
-    // Fetch all company data (complete entities)
     const Entities = await this.find({});
 
     return {
@@ -68,4 +76,4 @@ kapCompanySchema.statics.getAllEntities = async function () {
   }
 };
 
-export default mongoose.model("KapCompany", kapCompanySchema);
+export default mongoose.model("OpCompany", opCompanySchema);
