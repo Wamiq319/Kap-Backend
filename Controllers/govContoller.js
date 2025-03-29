@@ -29,17 +29,17 @@ export const createGovSector = async (req, res) => {
 };
 
 export const deleteGovSector = async (req, res) => {
+  const { managerId } = req.params;
+
   try {
-    const { id } = req.params;
-    const deletedCompany = await GovSector.deleteCompany(id);
-
-    if (!deletedCompany) {
-      return res.status(404).json({ message: "Company not found" });
-    }
-
-    res.status(200).json({ message: "Company deleted successfully", id });
+    const { message, success } = await GovSector.deleteEntity(managerId);
+    res.status(200).json({ message, success });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete GovSector" });
+    console.log(error);
+    res.status(400).json({
+      message: "Internal error",
+      success: false,
+    });
   }
 };
 

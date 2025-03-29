@@ -93,10 +93,14 @@ userSchema.statics.createUser = async function (userData) {
         : await this.generateUsername(userData.role, userData.username);
     console.log(userData);
     const newUser = await this.create(userData);
-    return { success: true, message: "User created", data: newUser };
+    return {
+      success: true,
+      message: "User created Succesfully",
+      data: newUser,
+    };
   } catch (error) {
     console.log(error);
-    return { success: false, message: "Error Creating User" };
+    return { success: false, message: "Error while Creating User" };
   }
 };
 
@@ -222,9 +226,14 @@ userSchema.statics.resetUserPassword = async function (
 userSchema.statics.deleteUser = async function (userId) {
   try {
     const deletedUser = await this.findByIdAndDelete(userId);
-    if (!deletedUser) throw new Error("User not found");
+    if (!deletedUser) {
+      return { success: false, message: "User not found" };
+    }
 
-    return { success: true, message: "User deleted successfully" };
+    return {
+      success: true,
+      message: deletedUser.name + " deleted successfully",
+    };
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -239,7 +248,6 @@ userSchema.statics.getAllGovManagers = async function () {
         path: "sectorId",
         select: "govSector -_id",
       });
-    console.log(govManagers);
 
     // Transform the data to include sector name directly
     const formattedManagers = govManagers.map((manager) => ({

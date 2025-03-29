@@ -132,14 +132,19 @@ export const resetUserPassword = async (req, res) => {
 };
 
 // Delete User
+// Fixed deleteUser controller
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const { message } = await User.deleteUser(userId);
-    res.status(200).json({ message });
+    const { message, success } = await User.deleteUser(userId);
+    res.status(200).json({ message, success }); // Send as a single object
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.log(error);
+    res.status(400).json({
+      message: "Internal error",
+      success: false,
+    });
   }
 };
 //Get Gov Managers

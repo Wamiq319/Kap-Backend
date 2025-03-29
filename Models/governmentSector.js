@@ -32,9 +32,15 @@ govSectorSchema.statics.createEntity = async function (entityData) {
 // Delete a Company Entity
 govSectorSchema.statics.deleteEntity = async function (EntityId) {
   try {
+    
     const deletedEntity = await this.findByIdAndDelete(EntityId);
-    if (!deletedEntity) throw new Error("GovSector Entity not found");
-    return { success: true, message: "GovSector Entity deleted successfully" };
+    if (!deletedEntity) {
+      return { success: false, message: "Sector not found" };
+    }
+    return {
+      success: true,
+      message: deletedEntity.govSector + " deleted successfully",
+    };
   } catch (error) {
     return { success: false, message: error.message };
   }
