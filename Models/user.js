@@ -95,8 +95,8 @@ userSchema.statics.createUser = async function (userData) {
     const newUser = await this.create(userData);
     return {
       success: true,
-      message: "User created Succesfully",
-      data: newUser,
+      message: newUser.username + " created Succesfully",
+      data: [],
     };
   } catch (error) {
     console.log(error);
@@ -107,10 +107,15 @@ userSchema.statics.createUser = async function (userData) {
 // User login
 userSchema.statics.login = async function (username, password) {
   try {
-    const user = await this.findOne({ username });
-
-    // .populate("companyId", "name")
-    // .populate("sectorId", "name");
+    const user = await this.findOne({ username })
+      .populate({
+        path: "sectorId",
+        select: "govSector", // Include both _id and govSector
+      })
+      .populate({
+        path: "companyId",
+        select: "opCompany", // Include both _id and opCompany
+      });
 
     if (!user) {
       return { success: false, message: "User not found", data: null };
@@ -118,24 +123,51 @@ userSchema.statics.login = async function (username, password) {
     if (password !== user.password) {
       return { success: false, message: "Invalid Credentials", data: null };
     }
+
+    // Format response based on user role
+    const formattedUser = {
+      id: user._id,
+      username: user.username,
+      role: user.role,
+      email: user.email,
+      mobile: user.mobile,
+      name: user.name,
+    };
+
+    // Add role-specific fields
+    switch (user.role) {
+      case "op_manager":
+        formattedUser.company = user.companyId
+          ? {
+              id: user.companyId._id,
+              name: user.companyId.opCompany, // Use opCompany instead of name
+            }
+          : null;
+        break;
+      case "gov_manager":
+        formattedUser.sector = user.sectorId
+          ? {
+              id: user.sectorId._id,
+              name: user.sectorId.govSector, // Use govSector instead of name
+            }
+          : null;
+        break;
+      case "kap_employee":
+        formattedUser.jobTitle = user.jobTitle;
+        break;
+      // admin case doesn't need special handling
+    }
+
     return {
       success: true,
-      data: {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-        email: user.email,
-        mobile: user.mobile,
-        companyId: user.companyId ? user.companyId.name : null,
-        sectorId: user.sectorId ? user.sectorId.name : null,
-      },
+      data: formattedUser,
       message: "Login successful",
     };
   } catch (error) {
+    console.error("Login error:", error);
     return { success: false, message: "Error while login" };
   }
 };
-
 userSchema.statics.updateAdminProfile = async function (
   adminId,
   updates,
@@ -256,18 +288,19 @@ userSchema.statics.getAllGovManagers = async function () {
       username: manager.username,
       password: manager.password,
       mobile: manager.mobile,
-      sector: manager.sectorId.govSector,
+      sector: manager.sectorId?.govSector,
     }));
-
+    console.log(govManagers);
     return {
       success: true,
       data: formattedManagers,
     };
   } catch (error) {
+    console.log(error);
     return {
       success: false,
       message: "Error fetching government managers",
-      error: error.message,
+      data: [],
     };
   }
 };
@@ -308,7 +341,7 @@ userSchema.statics.getAllOpManagers = async function () {
       username: manager.username,
       password: manager.password,
       mobile: manager.mobile,
-      sector: manager.companyId.opCompany,
+      company: manager.companyId?.opCompany,
     }));
 
     return {

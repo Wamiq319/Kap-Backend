@@ -19,30 +19,31 @@ govSectorSchema.statics.createEntity = async function (entityData) {
     if (newEntity) {
       return {
         success: true,
-        message: "Gov Sector Created Succesfully",
-        data: null,
+        message: newEntity.govSector + " Created Succesfully",
+        data: [],
       };
     }
   } catch (error) {
     console.log(error);
-    return { success: false, message: "Error creating GovSector", data: null };
+    return { success: false, message: "Error creating GovSector", data: [] };
   }
 };
 
 // Delete a Company Entity
 govSectorSchema.statics.deleteEntity = async function (EntityId) {
   try {
-    
     const deletedEntity = await this.findByIdAndDelete(EntityId);
     if (!deletedEntity) {
-      return { success: false, message: "Sector not found" };
+      return { success: false, message: "Sector not found", data: [] };
     }
     return {
       success: true,
       message: deletedEntity.govSector + " deleted successfully",
+      data: [],
     };
   } catch (error) {
-    return { success: false, message: error.message };
+    console.log(error);
+    return { success: false, message: "internal error", data: [] };
   }
 };
 

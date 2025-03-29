@@ -15,28 +15,37 @@ const kapCompanySchema = new mongoose.Schema(
 // Create a new Company Entity
 kapCompanySchema.statics.createEntity = async function (entityData) {
   try {
+    console.log(entityData);
     const newEntity = await this.create(entityData);
     if (newEntity) {
       return {
         success: true,
         message: "Company Created Succesfully",
-        data: null,
+        data: [],
       };
     }
   } catch (error) {
     console.log(error);
-    return { success: false, message: "Error creating Company", data: null };
+    return { success: false, message: "Error creating Company", data: [] };
   }
 };
 
 // Delete a Company Entity
 kapCompanySchema.statics.deleteEntity = async function (EntityId) {
   try {
+    console.log(EntityId);
     const deletedEntity = await this.findByIdAndDelete(EntityId);
-    if (!deletedEntity) throw new Error("Company Entity not found");
-    return { success: true, message: "Company Entity deleted successfully" };
+    if (!deletedEntity) {
+      return { success: false, message: "Company not found", data: [] };
+    }
+    return {
+      data: [],
+      success: true,
+      message: deletedEntity.governmentIntegration + "+ deleted successfully",
+    };
   } catch (error) {
-    return { success: false, message: error.message };
+    console.log(error);
+    return { success: false, message: "internal error", data: [] };
   }
 };
 

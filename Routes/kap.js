@@ -23,5 +23,6 @@ const router = express.Router();
 router.post("/create-company", upload, createKapCompany);
 router.get("/companies", getKapCompanies);
 router.get("/company-names", getKapCompaniesNames);
+router.delete("/delete/:companyId", deleteKapCompany);
 
 export default router;

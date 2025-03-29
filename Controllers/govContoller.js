@@ -3,13 +3,14 @@ import GovSector from "../Models/governmentSector.js";
 export const createGovSector = async (req, res) => {
   try {
     const { govSector, adminName, mobile, username, password } = req.body;
-    console.log(req.body);
 
     if (!govSector || !adminName || !mobile || !username || !password) {
       console.log(govSector, adminName, mobile, username, password);
-      return res
-        .status(400)
-        .json({ message: "All fields are required, including the logo image" });
+      return res.status(400).json({
+        message: "All fields are required, including the logo image",
+        data: [],
+        success: false,
+      });
     }
 
     const { success, data, message } = await GovSector.createEntity({
@@ -29,16 +30,17 @@ export const createGovSector = async (req, res) => {
 };
 
 export const deleteGovSector = async (req, res) => {
-  const { managerId } = req.params;
+  const { sectorId } = req.params;
 
   try {
-    const { message, success } = await GovSector.deleteEntity(managerId);
-    res.status(200).json({ message, success });
+    const { message, success, data } = await GovSector.deleteEntity(sectorId);
+    res.status(200).json({ message: message, success: success, data: data });
   } catch (error) {
     console.log(error);
     res.status(400).json({
       message: "Internal error",
       success: false,
+      data: [],
     });
   }
 };

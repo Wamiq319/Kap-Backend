@@ -23,6 +23,6 @@ const router = express.Router();
 router.post("/create-sector", upload, createGovSector);
 router.get("/sectors", getGovSectors);
 router.get("/sector-names", getSectorsNames);
-router.delete("/delete/:managerId", deleteGovSector);
+router.delete("/delete/:sectorId", deleteGovSector);
 
 export default router;

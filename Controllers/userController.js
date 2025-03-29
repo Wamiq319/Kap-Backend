@@ -15,24 +15,6 @@ export const loginUser = async (req, res) => {
 
   try {
     const { data, message, success } = await User.login(username, password);
-    console.log(data, message, success);
-    // req.session.regenerate((err) => {
-    //   if (err) return res.status(500).json({ message: "Try again" });
-
-    //   req.session.user = {
-    //     id: user._id,
-    //     username: user.username,
-    //     role: user.role,
-    //   };
-
-    //   res
-    //     .status(200)
-    //     .json({
-    //       message: "Login successful",
-    //       user: req.session.user,
-    //       data: user,
-    //     });
-    // });
 
     res.status(200).json({ message: message, success: success, data: data });
   } catch (error) {

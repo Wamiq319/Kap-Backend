@@ -17,7 +17,6 @@ export const createKapCompany = async (req, res) => {
         .status(400)
         .json({ message: "All fields are required, including the logo image" });
     }
-    console.log("Ok");
 
     const { success, data, message } = await KapCompany.createEntity({
       governmentIntegration,
@@ -37,16 +36,17 @@ export const createKapCompany = async (req, res) => {
 
 export const deleteKapCompany = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedCompany = await KapCompany.deleteCompany(id);
+    const { companyId } = req.params;
 
-    if (!deletedCompany) {
-      return res.status(404).json({ message: "Company not found" });
-    }
-
-    res.status(200).json({ message: "Company deleted successfully", id });
+    const { message, success, data } = await KapCompany.deleteEntity(companyId);
+    res.status(200).json({ message: message, success: success, data: data });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete kapcompany" });
+    console.log(error);
+    res.status(400).json({
+      message: "Internal error",
+      success: false,
+      data: [],
+    });
   }
 };
 
