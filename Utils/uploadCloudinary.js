@@ -1,30 +1,87 @@
-import cloudinary from "cloudinary";
-import fs from "fs";
-import dotenv from "dotenv";
+import { uploadFile } from "../middleware/upload.js";
+import { uploadToCloudinary, getResourceType } from "../utils/cloudinary.js";
 
-dotenv.config();
-
-// 🔹 Configure Cloudinary
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Function to upload file to Cloudinary & delete temp file
-export const uploadToCloudinary = async (filePath) => {
+// Example for image upload
+export const uploadImage = async (req, res) => {
   try {
-    const result = await cloudinary.v2.uploader.upload(filePath, {
-      folder: "kap_companies",
+    const uploadMiddleware = uploadFile("image");
+
+    uploadMiddleware(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        });
+      }
+
+      const result = await uploadToCloudinary(
+        req.file.path,
+        "images",
+        getResourceType(req.file.mimetype)
+      );
+
+      res.json({
+        success: true,
+        data: {
+          url: result.url,
+          type: result.resource_type,
+        },
+      });
     });
-
-    // Delete the file from temp folder after upload
-    fs.unlinkSync(filePath);
-
-    return result.secure_url;
   } catch (error) {
-    // Delete file if upload fails
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    throw new Error(error.message || "Cloudinary upload failed");
+    res.status(500).json({
+      success: false,
+      message: "Server error during upload",
+    });
+  }
+};
+
+// Example for PDF/document upload
+export const uploadDocument = async (req, res) => {
+  try {
+    const uploadMiddleware = uploadFile("document");
+
+    uploadMiddleware(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        });
+      }
+
+      const result = await uploadToCloudinary(
+        req.file.path,
+        "documents",
+        "raw" // Force as raw for PDFs
+      );
+
+      res.json({
+        success: true,
+        data: {
+          url: result.url,
+          download_url: `${result.url}?dl=1`, // Add download parameter
+          type: "document",
+        },
+      });
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error during upload",
+    });
   }
 };

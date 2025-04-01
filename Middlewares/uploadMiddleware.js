@@ -1,24 +1,57 @@
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
 
-// Ensure temp folder exists
-const tempDir = path.join("public", "temp");
+const tempDir = path.join(process.cwd(), "temp");
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
 }
 
-// Set up multer for storing files in `public/temp`
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/gif", // Images
+    "application/pdf", // PDFs
+    "application/msword", // Word
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Unsupported file type: ${file.mimetype}`), false);
+  }
+};
+
+// Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, tempDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
   },
 });
 
-const upload = multer({ storage });
+export const uploadFile = (fieldName) =>
+  multer({
+    storage,
+    fileFilter,
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+  }).single(fieldName);
 
-export default upload.single("logoImage");
+// For multiple files
+export const uploadFiles = (fieldName, maxCount = 5) =>
+  multer({
+    storage,
+    fileFilter,
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: maxCount,
+    },
+  }).array(fieldName, maxCount);

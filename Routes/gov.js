@@ -12,8 +12,6 @@ import {
   deleteGovSector,
 } from "../Controllers/govContoller.js";
 
-import upload from "../Middlewares/uploadMiddleware.js";
-
 const router = express.Router();
 
 // Apply session middleware to all routes

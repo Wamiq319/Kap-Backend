@@ -7,11 +7,13 @@ import cors from "cors";
 
 import authRoutes from "./Routes/auth.js";
 import userRoutes from "./Routes/user.js";
+import employeeRoutes from "./Routes/employee.js";
 
 import protectedRoutes from "./Routes/protectedRoutes.js";
 import kapRoutes from "./Routes/kap.js";
 import govRoutes from "./Routes/gov.js";
 import opRoutes from "./Routes/op.js";
+import ticketRoutes from "./Routes/ticket.js";
 
 dotenv.config();
 
@@ -64,6 +66,8 @@ app.use("/protected", protectedRoutes);
 app.use("/protected/kap", kapRoutes);
 app.use("/protected/gov", govRoutes);
 app.use("/protected/op", opRoutes);
+app.use("/protected/tkt", ticketRoutes);
+app.use("/protected/employee", employeeRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

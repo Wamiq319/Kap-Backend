@@ -82,16 +82,11 @@ userSchema.statics.generateUsername = async function (role, username) {
 // Create user
 userSchema.statics.createUser = async function (userData) {
   try {
-    if (userData.role === "admin" && !userData.username)
-      throw new Error("Admin must have a username.");
+    userData.username = await this.generateUsername(
+      userData.role,
+      userData.username
+    );
 
-    // Ensure jobTitle is null for non-kap_employee roles
-
-    userData.username =
-      userData.role === "admin"
-        ? userData.username
-        : await this.generateUsername(userData.role, userData.username);
-    console.log(userData);
     const newUser = await this.create(userData);
     return {
       success: true,
@@ -110,11 +105,11 @@ userSchema.statics.login = async function (username, password) {
     const user = await this.findOne({ username })
       .populate({
         path: "sectorId",
-        select: "govSector", // Include both _id and govSector
+        select: "govSector  logoImage",
       })
       .populate({
         path: "companyId",
-        select: "opCompany", // Include both _id and opCompany
+        select: "opCompany  logoImage",
       });
 
     if (!user) {
@@ -140,7 +135,8 @@ userSchema.statics.login = async function (username, password) {
         formattedUser.company = user.companyId
           ? {
               id: user.companyId._id,
-              name: user.companyId.opCompany, // Use opCompany instead of name
+              name: user.companyId.opCompany,
+              logo: user.companyId.logoImage,
             }
           : null;
         break;
@@ -148,14 +144,14 @@ userSchema.statics.login = async function (username, password) {
         formattedUser.sector = user.sectorId
           ? {
               id: user.sectorId._id,
-              name: user.sectorId.govSector, // Use govSector instead of name
+              name: user.sectorId.govSector,
+              logo: user.sectorId.logoImage,
             }
           : null;
         break;
       case "kap_employee":
         formattedUser.jobTitle = user.jobTitle;
         break;
-      // admin case doesn't need special handling
     }
 
     return {

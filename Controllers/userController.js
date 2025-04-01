@@ -46,7 +46,7 @@ export const createUser = async (req, res) => {
     sectorId,
     jobTitle,
   } = req.body;
-
+  console.log(req.body);
   if (!password || !mobile || !role)
     return res.status(400).json({ message: "Fill all the fields" });
 
@@ -114,7 +114,6 @@ export const resetUserPassword = async (req, res) => {
 };
 
 // Delete User
-// Fixed deleteUser controller
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 

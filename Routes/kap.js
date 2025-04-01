@@ -16,9 +16,6 @@ import upload from "../Middlewares/uploadMiddleware.js";
 
 const router = express.Router();
 
-// Apply session middleware to all routes
-// router.use(sessionMiddleware);
-
 // Routes for Companies
 router.post("/create-company", upload, createKapCompany);
 router.get("/companies", getKapCompanies);
