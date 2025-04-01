@@ -1,87 +1,87 @@
-import { uploadFile } from "../middleware/upload.js";
-import { uploadToCloudinary, getResourceType } from "../utils/cloudinary.js";
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
-// Example for image upload
-export const uploadImage = async (req, res) => {
+// Configure Cloudinary (set these in your environment variables)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+/**
+ * Uploads logo image to Cloudinary with optimizations
+ * @param {String} filePath - Path to temporary file
+ * @returns {Promise<{url: String, public_id: String}>}
+ */
+export const uploadLogoImage = async (filePath) => {
   try {
-    const uploadMiddleware = uploadFile("image");
-
-    uploadMiddleware(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({
-          success: false,
-          message: err.message,
-        });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded",
-        });
-      }
-
-      const result = await uploadToCloudinary(
-        req.file.path,
-        "images",
-        getResourceType(req.file.mimetype)
-      );
-
-      res.json({
-        success: true,
-        data: {
-          url: result.url,
-          type: result.resource_type,
-        },
-      });
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "logos",
+      quality: "auto:best",
+      fetch_format: "auto",
+      width: 300,
+      height: 300,
+      crop: "limit",
     });
+
+    // Cleanup temp file
+    fs.unlinkSync(filePath);
+
+    return {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error during upload",
-    });
+    // Ensure cleanup even if upload fails
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    throw new Error(`Logo upload failed: ${error.message}`);
   }
 };
 
-// Example for PDF/document upload
-export const uploadDocument = async (req, res) => {
+/**
+ * Uploads generic attachment to Cloudinary
+ * @param {String} filePath - Path to temporary file
+ * @returns {Promise<{url: String, public_id: String}>}
+ */
+export const uploadAttachment = async (filePath) => {
   try {
-    const uploadMiddleware = uploadFile("document");
-
-    uploadMiddleware(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({
-          success: false,
-          message: err.message,
-        });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded",
-        });
-      }
-
-      const result = await uploadToCloudinary(
-        req.file.path,
-        "documents",
-        "raw" // Force as raw for PDFs
-      );
-
-      res.json({
-        success: true,
-        data: {
-          url: result.url,
-          download_url: `${result.url}?dl=1`, // Add download parameter
-          type: "document",
-        },
-      });
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: "government-sectors/attachments",
+      resource_type: "auto", // Maintains original format
     });
+
+    // Cleanup temp file
+    fs.unlinkSync(filePath);
+
+    return {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Server error during upload",
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    throw new Error(`Attachment upload failed: ${error.message}`);
+  }
+};
+/**
+ * Deletes file from Cloudinary
+ * @param {String} publicId - The public_id from Cloudinary upload response
+ * @param {Boolean} [isImage=true] - Set false for non-image files
+ * @returns {Promise<Object>} Cloudinary deletion result
+ */
+export const deleteFromCloudinary = async (publicId, isImage = true) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: isImage ? "image" : "raw",
+      invalidate: true, // Optional: clears CDN cache
     });
+
+    if (result.result !== "ok") {
+      throw new Error(`Cloudinary deletion failed: ${result.result}`);
+    }
+    return result;
+  } catch (error) {
+    console.error("Cloudinary deletion error:", error);
+    throw error;
   }
 };

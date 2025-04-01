@@ -31,12 +31,20 @@ opCompanySchema.statics.createEntity = async function (entityData) {
 
 // Delete a Company Entity
 opCompanySchema.statics.deleteEntity = async function (EntityId) {
+  console.log(EntityId);
   try {
     const deletedEntity = await this.findByIdAndDelete(EntityId);
-    if (!deletedEntity) throw new Error("Company Entity not found");
-    return { success: true, message: "Company Entity deleted successfully" };
+    if (!deletedEntity) {
+      return { success: false, message: "Company not found", data: [] };
+    }
+    return {
+      success: true,
+      message: deletedEntity.opCompany + " deleted successfully",
+      data: [],
+    };
   } catch (error) {
-    return { success: false, message: error.message };
+    console.log(error);
+    return { success: false, message: "Internal Server Error", data: [] };
   }
 };
 

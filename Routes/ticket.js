@@ -2,9 +2,9 @@ import express from "express";
 import { createTicket, getTickets } from "../Controllers/ticketController.js";
 
 const router = express.Router();
-import upload from "../Middlewares/uploadMiddleware.js";
+import { uploadAttachment } from "../Middlewares/uploadMiddleware.js";
 
-router.post("/create", upload, createTicket);
+router.post("/create", uploadAttachment, createTicket);
 router.get("/tickets", getTickets);
 
 export default router;

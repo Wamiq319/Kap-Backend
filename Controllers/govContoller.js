@@ -1,10 +1,23 @@
 import GovSector from "../Models/governmentSector.js";
+import { uploadLogoImage } from "../Utils/uploadCloudinary.js";
 
 export const createGovSector = async (req, res) => {
   try {
     const { govSector, adminName, mobile, username, password } = req.body;
+    const logoImage = req.file;
 
-    if (!govSector || !adminName || !mobile || !username || !password) {
+    const { url: logoUrl, public_id: logoPublicId } = await uploadLogoImage(
+      logoImage.path
+    );
+
+    if (
+      !govSector ||
+      !adminName ||
+      !mobile ||
+      !username ||
+      !password ||
+      !logoImage
+    ) {
       console.log(govSector, adminName, mobile, username, password);
       return res.status(400).json({
         message: "All fields are required, including the logo image",
@@ -19,7 +32,7 @@ export const createGovSector = async (req, res) => {
       mobile,
       username,
       password,
-      logoImage: "https://www.gstatic.com/webp/gallery/2.sm.jpg", // Store only the URL
+      logoImage: logoUrl,
     });
 
     res.status(200).json({ message: message, success: success, data: data });
@@ -31,6 +44,7 @@ export const createGovSector = async (req, res) => {
 
 export const deleteGovSector = async (req, res) => {
   const { sectorId } = req.params;
+  console.log(req.params);
 
   try {
     const { message, success, data } = await GovSector.deleteEntity(sectorId);

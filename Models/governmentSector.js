@@ -31,6 +31,7 @@ govSectorSchema.statics.createEntity = async function (entityData) {
 
 // Delete a Company Entity
 govSectorSchema.statics.deleteEntity = async function (EntityId) {
+  console.log(EntityId);
   try {
     const deletedEntity = await this.findByIdAndDelete(EntityId);
     if (!deletedEntity) {

@@ -1,13 +1,27 @@
 import OpCompany from "../Models/opCompany.js";
+import { uploadLogoImage } from "../Utils/uploadCloudinary.js";
 
 export const createOpCompany = async (req, res) => {
   try {
     const { opCompany, adminName, mobile, username, password } = req.body;
 
-    if (!opCompany || !adminName || !mobile || !username || !password) {
-      return res
-        .status(400)
-        .json({ message: "All fields are required, including the logo image" });
+    const logoImage = req.file;
+    const { url: logoUrl, public_id: logoPublicId } = await uploadLogoImage(
+      logoImage.path
+    );
+    if (
+      !opCompany ||
+      !adminName ||
+      !mobile ||
+      !username ||
+      !password ||
+      !logoImage
+    ) {
+      return res.status(400).json({
+        message: "All fields are required, including the logo image",
+        success: false,
+        data: [],
+      });
     }
 
     const { success, data, message } = await OpCompany.createEntity({
@@ -16,7 +30,7 @@ export const createOpCompany = async (req, res) => {
       mobile,
       username,
       password,
-      logoImage: "https://www.gstatic.com/webp/gallery/2.sm.jpg", // Store only the URL
+      logoImage: logoUrl,
     });
 
     res.status(200).json({ message: message, success: success, data: data });
@@ -26,18 +40,19 @@ export const createOpCompany = async (req, res) => {
   }
 };
 
-export const deleteOpCOmpany = async (req, res) => {
+export const deleteOpCompany = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedCompany = await OpCompany.deleteCompany(id);
+    const { companyId } = req.params;
 
-    if (!deletedCompany) {
-      return res.status(404).json({ message: "Company not found" });
-    }
-
-    res.status(200).json({ message: "Company deleted successfully", id });
+    const { message, success, data } = await OpCompany.deleteEntity(companyId);
+    res.status(200).json({ message: message, success: success, data: data });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete OpCOmpany" });
+    console.log(error);
+    res.status(500).json({
+      message: "Failed to delete OpCOmpany",
+      success: false,
+      data: [],
+    });
   }
 };
 

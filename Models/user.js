@@ -59,7 +59,7 @@ userSchema.statics.generateUsername = async function (role, username) {
     };
 
     const prefix = rolePrefixes[role] || "USR";
-    let Username;
+    let generatedUsername;
 
     while (true) {
       const randomSuffix = Math.random()
@@ -67,13 +67,13 @@ userSchema.statics.generateUsername = async function (role, username) {
         .substring(2, 5)
         .toUpperCase();
 
-      Username = `${username}${prefix}${randomSuffix}`;
+      generatedUsername = `${username}${prefix}${randomSuffix}`;
 
-      const existingUser = await this.findOne({ Username });
+      const existingUser = await this.findOne({ generatedUsername });
       if (!existingUser) break;
     }
 
-    return Username;
+    return generatedUsername;
   } catch (error) {
     return { success: false, message: "Error create user " };
   }

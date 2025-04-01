@@ -4,6 +4,7 @@ import {
   sessionMiddleware,
   authorizeRoles,
 } from "../Middlewares/authMiddleware.js";
+import { uploadImage } from "../Middlewares/uploadMiddleware.js";
 
 import {
   createGovSector,
@@ -18,7 +19,7 @@ const router = express.Router();
 // router.use(sessionMiddleware);
 
 // Routes for Companies
-router.post("/create-sector", upload, createGovSector);
+router.post("/create-sector", uploadImage, createGovSector);
 router.get("/sectors", getGovSectors);
 router.get("/sector-names", getSectorsNames);
 router.delete("/delete/:sectorId", deleteGovSector);
