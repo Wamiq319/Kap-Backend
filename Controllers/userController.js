@@ -1,26 +1,41 @@
 import User from "../Models/user.js";
+import Employee from "../Models/Employee.js";
+
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// User Login
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
 
   if (!username)
-    return res.status(400).json({ message: "Username is required" });
+    return res
+      .status(400)
+      .json({ message: "Username is required", success: false });
 
   if (!password)
-    return res.status(400).json({ message: "Password is required" });
+    return res
+      .status(400)
+      .json({ message: "Password is required", success: false });
 
   try {
-    const { data, message, success } = await User.login(username, password);
+    const userResult = await User.login(username, password);
 
-    res.status(200).json({ message: message, success: success, data: data });
+    if (userResult.success) {
+      return res.status(200).json(userResult);
+    }
+
+    if (userResult.message === "User not found") {
+      const employeeResult = await Employee.login(username, password);
+      return res.status(200).json(employeeResult);
+    }
+
+    return res.status(401).json(userResult);
   } catch (error) {
-    res
-      .status(401)
-      .json({ success: false, user: null, message: "Internal Sever error" });
+    console.error("Login error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
   }
 };
 

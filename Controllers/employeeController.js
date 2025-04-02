@@ -1,29 +1,5 @@
 import Employee from "../Models/Employee.js";
 
-// Employee Login
-export const loginEmployee = async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username)
-    return res
-      .status(400)
-      .json({ message: "Username is required", success: false });
-  if (!password)
-    return res
-      .status(400)
-      .json({ message: "Password is required", success: false });
-
-  try {
-    const { success, message, data } = await Employee.login(username, password);
-    res.status(200).json({ message, success, data });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
 // Create Employee
 export const createEmployee = async (req, res) => {
   const { name, username, mobile, password, role, entityId } = req.body;
@@ -107,6 +83,38 @@ export const deleteEmployee = async (req, res) => {
 export const getEmployees = async (req, res) => {
   const { role, entityId } = req.query;
   console.log(req.query);
+
+  if (!["op_employee", "gov_employee"].includes(role)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid role specified",
+      data: [],
+    });
+  }
+
+  try {
+    const { data, success, message } = await Employee.getEmployees({
+      role,
+      entityId,
+    });
+
+    res.status(200).json({
+      success: success,
+      data: data,
+      message: message,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch Employees",
+      data: [],
+    });
+  }
+};
+
+export const getEmployeeNames = async (req, res) => {
+  const { role, entityId } = req.query;
 
   if (!["op_employee", "gov_employee"].includes(role)) {
     return res.status(400).json({

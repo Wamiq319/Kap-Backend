@@ -78,7 +78,7 @@ employeeSchema.statics.login = async function (username, password) {
     );
 
     if (!employee) {
-      return { success: false, message: "Employee not found" };
+      return { success: false, message: "User not found", data: [] };
     }
 
     if (password !== employee.password) {
