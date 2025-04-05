@@ -43,7 +43,7 @@ export const createTicket = async (req, res) => {
 export const getTickets = async (req, res) => {
   try {
     const { userRole, userId } = req.query;
-
+    console.log(userRole, userId);
     if (!userRole || !userId) {
       return res.status(400).json({
         message: "userRole and userId are required as query parameters",
@@ -76,7 +76,7 @@ export const getTickets = async (req, res) => {
 export const updateAssignedTo = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { assignedToId } = req.body;
+    const { assignedToId, assigneeType } = req.body;
 
     if (!ticketId || !assignedToId) {
       return res.status(400).json({
@@ -85,8 +85,19 @@ export const updateAssignedTo = async (req, res) => {
         data: [],
       });
     }
+    if (!["opEmployee", "govEmployee"].includes(assigneeType)) {
+      return {
+        success: false,
+        message: "Invalid assignee type. Must be 'opEmployee' or 'govEmployee'",
+        data: [],
+      };
+    }
 
-    const result = await Ticket.updateAssignedTo(ticketId, assignedToId);
+    const result = await Ticket.updateAssignedTo(
+      ticketId,
+      assignedToId,
+      assigneeType
+    );
 
     if (!result.success) {
       return res.status(404).json(result);

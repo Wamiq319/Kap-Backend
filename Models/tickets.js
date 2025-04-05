@@ -24,11 +24,22 @@ const ticketSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
-
   assignedTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
-    default: null,
+    type: {
+      opEmployee: {
+        // For operator company employees
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Employee",
+        default: null,
+      },
+      govEmployee: {
+        // For government employees
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Employee",
+        default: null,
+      },
+    },
+    default: {},
   },
   status: {
     type: String,
@@ -54,6 +65,22 @@ const ticketSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  notes: [
+    {
+      addedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: "notes.userType",
+        required: true,
+      },
+      userType: {
+        type: String,
+        enum: ["OpCompany", "GovSector"],
+        required: true,
+      },
+      text: { type: String, required: true },
+      date: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 ticketSchema.pre("save", async function (next) {
@@ -93,8 +120,9 @@ ticketSchema.statics.getAllEntities = async function (data) {
   try {
     const { userRole, userId } = data;
 
-    let query = { status: { $ne: "Closed" } }; // Exclude Closed tickets
+    let query = { status: { $ne: "Closed" } };
     let projection = {};
+    let populateAssignees = [];
 
     switch (userRole) {
       case "kap_employee":
@@ -109,6 +137,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           createdAt: 1,
         };
         break;
+
       case "gov_manager":
         query.requestor = userId;
         projection = {
@@ -121,23 +150,28 @@ ticketSchema.statics.getAllEntities = async function (data) {
           expectedCompletionDate: 1,
           atachment: 1,
           createdAt: 1,
+          "assignedTo.govEmployee": 1,
         };
+        populateAssignees = ["assignedTo.govEmployee"];
         break;
+
       case "op_manager":
         query.operator = userId;
         projection = {
           ticketNumber: 1,
           location: 1,
           requestType: 1,
-          assignedTo: 1,
           status: 1,
           progress: 1,
           expectedCompletionDate: 1,
           atachment: 1,
+          "assignedTo.opEmployee": 1,
         };
+        populateAssignees = ["assignedTo.opEmployee"];
         break;
+
       case "op_employee":
-        query.assignedTo = userId;
+        query["assignedTo.opEmployee"] = userId;
         projection = {
           ticketNumber: 1,
           requestor: 1,
@@ -149,22 +183,57 @@ ticketSchema.statics.getAllEntities = async function (data) {
           atachment: 1,
         };
         break;
+
+      case "gov_employee":
+        query["assignedTo.govEmployee"] = userId;
+        projection = {
+          ticketNumber: 1,
+          operator: 1,
+          location: 1,
+          requestType: 1,
+          status: 1,
+          progress: 1,
+          expectedCompletionDate: 1,
+          atachment: 1,
+        };
+        break;
+
       default:
         return { success: false, data: [], message: "Unauthorized access" };
     }
 
-    const entities = await this.find(query, projection)
+    // Base query with common populations
+    let queryBuilder = this.find(query, projection)
       .populate("operator", "opCompany -_id")
-      .populate("requestor", "govSector -_id")
-      .populate("assignedTo", "name")
-      .lean();
+      .populate("requestor", "govSector -_id");
 
-    const transformedEntities = entities.map((ticket) => ({
-      ...ticket,
-      operator: ticket.operator ? ticket.operator.opCompany : null,
-      requestor: ticket.requestor ? ticket.requestor.govSector : null,
-      assignedTo: ticket.assignedTo ? ticket.assignedTo.name : null,
-    }));
+    // Add role-specific population
+    populateAssignees.forEach((field) => {
+      queryBuilder = queryBuilder.populate(field, "name");
+    });
+
+    const entities = await queryBuilder.lean();
+
+    const transformedEntities = entities.map((ticket) => {
+      let assignedToName = null;
+
+      if (ticket.assignedTo) {
+        if (userRole === "gov_manager") {
+          assignedToName = ticket.assignedTo.govEmployee?.name || null;
+        } else if (userRole === "op_manager") {
+          assignedToName = ticket.assignedTo.opEmployee?.name || null;
+        }
+        // For op_employee and gov_employee, we don't show assignedTo name
+        // as they're seeing tickets assigned to themselves
+      }
+
+      return {
+        ...ticket,
+        operator: ticket.operator ? ticket.operator.opCompany : null,
+        requestor: ticket.requestor ? ticket.requestor.govSector : null,
+        assignedTo: assignedToName,
+      };
+    });
 
     return { success: true, data: transformedEntities, message: null };
   } catch (error) {
@@ -179,22 +248,54 @@ ticketSchema.statics.getAllEntities = async function (data) {
 
 ticketSchema.statics.updateAssignedTo = async function (
   ticketId,
-  assignedToId
+  employeeId,
+  assigneeType // 'opEmployee' or 'govEmployee'
 ) {
   try {
-    const updatedTicket = await this.findByIdAndUpdate(
-      ticketId,
-      {
-        $set: { assignedTo: assignedToId },
-        $push: {
-          progress: {
-            percentage: 0, // Reset progress when reassigned
-            observation: `Ticket reassigned to new employee`,
-          },
-        },
+    // 1. Validate the assigneeType
+    if (!["opEmployee", "govEmployee"].includes(assigneeType)) {
+      return {
+        success: false,
+        message: "Invalid assignee type. Must be 'opEmployee' or 'govEmployee'",
+        data: [],
+      };
+    }
+
+    // 2. Verify employee exists and get their role
+    const employee = await mongoose.model("Employee").findById(employeeId);
+    if (!employee) {
+      return {
+        success: false,
+        message: "Employee not found",
+        data: [],
+      };
+    }
+
+    // 3. Validate role matches assignment type
+    const requiredRole =
+      assigneeType === "opEmployee" ? "op_employee" : "gov_employee";
+    if (employee.role !== requiredRole) {
+      return {
+        success: false,
+        message: `Employee must be a ${requiredRole}`,
+        data: [],
+      };
+    }
+
+    // 4. Prepare the update
+    const update = {
+      $set: {
+        [`assignedTo.${assigneeType}`]: employeeId,
+        updatedAt: new Date(),
       },
-      { new: true } // Return the updated document
-    ).populate("assignedTo", "name");
+    };
+
+    // 5. Execute the update
+    const updatedTicket = await this.findByIdAndUpdate(ticketId, update, {
+      new: true,
+    })
+      .populate(`assignedTo.${assigneeType}`, "name")
+      .lean();
 
     if (!updatedTicket) {
       return {
@@ -204,18 +305,20 @@ ticketSchema.statics.updateAssignedTo = async function (
       };
     }
 
+    // 6. Prepare the response
+    const assignedName =
+      updatedTicket.assignedTo[assigneeType]?.name || "Unknown";
+
     return {
       success: true,
-      message:
-        updatedTicket.assignedTo.name +
-        " has been successfully assigned the ticket.",
+      message: `${assignedName} assigned successfully as ${assigneeType}`,
       data: [],
     };
   } catch (error) {
-    console.error("Error updating assignedTo:", error);
+    console.error("Assignment error:", error);
     return {
       success: false,
-      message: "Error updating ticket assignment",
+      message: "Assignment failed",
       data: null,
     };
   }

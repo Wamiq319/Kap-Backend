@@ -13,6 +13,9 @@ const employeeSchema = new mongoose.Schema({
   entityId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
+    ref: function () {
+      return this.role === "op_employee" ? "OpCompany" : "GovSector";
+    },
   },
 });
 
@@ -72,10 +75,7 @@ employeeSchema.statics.createEmployee = async function (employeeData) {
 // LOGIN with populated data
 employeeSchema.statics.login = async function (username, password) {
   try {
-    const employee = await this.findOne({ username }).populate(
-      "entityId",
-      "name"
-    );
+    const employee = await this.findOne({ username }).populate("entityId");
 
     if (!employee) {
       return { success: false, message: "User not found", data: [] };
@@ -84,7 +84,7 @@ employeeSchema.statics.login = async function (username, password) {
     if (password !== employee.password) {
       return { success: false, message: "Invalid password" };
     }
-
+    console.log(employee);
     const responseData = {
       id: employee._id,
       name: employee.name,
@@ -94,9 +94,19 @@ employeeSchema.statics.login = async function (username, password) {
 
     // Add organization info based on role
     if (employee.role === "op_employee") {
-      responseData.company = employee.entityId?.name || null;
+      // Refer to the opCompany field in the populated entityId (opCompany schema)
+      responseData.entity = {
+        name: employee.entityId?.opCompany || null,
+        id: employee.entityId?._id,
+        logo: employee.entityId?.logoImage,
+      };
     } else if (employee.role === "gov_employee") {
-      responseData.sector = employee.entityId?.name || null;
+      // Refer to the govSector name field in the populated entityId (govSector schema)
+      responseData.entity = {
+        name: employee.entityId?.govSector || null,
+        id: employee.entityId?._id,
+        logo: employee.entityId?.logoImage,
+      };
     }
 
     return {
