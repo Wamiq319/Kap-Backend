@@ -4,10 +4,9 @@ const opCompanySchema = new mongoose.Schema(
   {
     opCompany: { type: String, required: true },
     logoImage: { type: String, required: true }, // Cloudinary URL
+    logoPublicId: { type: String, required: true }, // Cloudinary Public ID
     adminName: { type: String, required: true },
     mobile: { type: String, required: true },
-    username: { type: String, required: true },
-    password: { type: String, required: true },
   },
   { versionKey: false }
 );

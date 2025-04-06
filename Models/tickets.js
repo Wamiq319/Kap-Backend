@@ -41,6 +41,14 @@ const ticketSchema = new mongoose.Schema({
     },
     default: {},
   },
+  opTransferReq: {
+    type: String,
+    default: null,
+  },
+  govTransferReq: {
+    type: String,
+    default: null,
+  },
   status: {
     type: String,
     enum: ["Open", "In Progress", "Completed", "Closed"],
@@ -135,11 +143,17 @@ ticketSchema.statics.getAllEntities = async function (data) {
           atachment: 1,
           expectedCompletionDate: 1,
           createdAt: 1,
+          progress: 1,
+          notes: 1,
+          status: 1,
         };
         break;
 
       case "gov_manager":
-        query.requestor = userId;
+        query = {
+          requestor: userId,
+          status: { $nin: ["Open", "Closed"] },
+        };
         projection = {
           ticketNumber: 1,
           operator: 1,
@@ -150,6 +164,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           expectedCompletionDate: 1,
           atachment: 1,
           createdAt: 1,
+          govTransferReq: 1,
           "assignedTo.govEmployee": 1,
         };
         populateAssignees = ["assignedTo.govEmployee"];
@@ -165,6 +180,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           progress: 1,
           expectedCompletionDate: 1,
           atachment: 1,
+          opTransferReq: 1,
           "assignedTo.opEmployee": 1,
         };
         populateAssignees = ["assignedTo.opEmployee"];
@@ -180,6 +196,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           status: 1,
           progress: 1,
           expectedCompletionDate: 1,
+          opTransferReq: 1,
           atachment: 1,
         };
         break;
@@ -195,6 +212,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           progress: 1,
           expectedCompletionDate: 1,
           atachment: 1,
+          govTransferReq: 1,
         };
         break;
 
@@ -252,7 +270,6 @@ ticketSchema.statics.updateAssignedTo = async function (
   assigneeType // 'opEmployee' or 'govEmployee'
 ) {
   try {
-    // 1. Validate the assigneeType
     if (!["opEmployee", "govEmployee"].includes(assigneeType)) {
       return {
         success: false,
@@ -261,7 +278,6 @@ ticketSchema.statics.updateAssignedTo = async function (
       };
     }
 
-    // 2. Verify employee exists and get their role
     const employee = await mongoose.model("Employee").findById(employeeId);
     if (!employee) {
       return {
@@ -287,6 +303,9 @@ ticketSchema.statics.updateAssignedTo = async function (
       $set: {
         [`assignedTo.${assigneeType}`]: employeeId,
         updatedAt: new Date(),
+        ...(assigneeType === "opEmployee"
+          ? { opTransferReq: null }
+          : { govTransferReq: null }),
       },
     };
 
@@ -413,6 +432,55 @@ ticketSchema.statics.addProgress = async function (
     return {
       success: false,
       message: "Error updating ticket progress",
+      data: null,
+    };
+  }
+};
+
+ticketSchema.statics.OpenTransferRequest = async function (
+  ticketId,
+  transferType, // 'op' or 'gov'
+  message
+) {
+  try {
+    // Initialize empty update object
+    const update = { $set: {} };
+
+    // Set the appropriate transfer field
+    if (transferType === "op") {
+      update.$set.opTransferReq = message;
+    } else if (transferType === "gov") {
+      update.$set.govTransferReq = message;
+    } else {
+      return {
+        success: false,
+        message: "Invalid transfer type. Must be 'op' or 'gov'",
+        data: [],
+      };
+    }
+
+    const updatedTicket = await this.findByIdAndUpdate(ticketId, update, {
+      new: true,
+    });
+
+    if (!updatedTicket) {
+      return {
+        success: false,
+        message: "Ticket not found",
+        data: [],
+      };
+    }
+
+    return {
+      success: true,
+      message: "Transfer request added successfully",
+      data: [],
+    };
+  } catch (error) {
+    console.error("Error creating transfer request:", error);
+    return {
+      success: false,
+      message: "Error creating transfer request",
       data: null,
     };
   }

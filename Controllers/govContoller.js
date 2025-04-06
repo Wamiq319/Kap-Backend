@@ -3,22 +3,14 @@ import { uploadLogoImage } from "../Utils/uploadCloudinary.js";
 
 export const createGovSector = async (req, res) => {
   try {
-    const { govSector, adminName, mobile, username, password } = req.body;
+    const { govSector, adminName, mobile } = req.body;
     const logoImage = req.file;
 
     const { url: logoUrl, public_id: logoPublicId } = await uploadLogoImage(
       logoImage.path
     );
 
-    if (
-      !govSector ||
-      !adminName ||
-      !mobile ||
-      !username ||
-      !password ||
-      !logoImage
-    ) {
-      console.log(govSector, adminName, mobile, username, password);
+    if (!govSector || !adminName || !mobile || !logoImage) {
       return res.status(400).json({
         message: "All fields are required, including the logo image",
         data: [],
@@ -30,8 +22,7 @@ export const createGovSector = async (req, res) => {
       govSector,
       adminName,
       mobile,
-      username,
-      password,
+      logoPublicId: logoPublicId,
       logoImage: logoUrl,
     });
 

@@ -5,6 +5,7 @@ import {
   updateAssignedTo,
   addProgress,
   updateStatus,
+  createTransferRequest,
 } from "../Controllers/ticketController.js";
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.get("/tickets", getTickets);
 router.patch("/assign/:ticketId", updateAssignedTo);
 router.patch("/progress/:ticketId", addProgress);
 router.patch("/status/:ticketId", updateStatus);
+router.patch("/transfer-request/:ticketId", createTransferRequest);
 
 export default router;

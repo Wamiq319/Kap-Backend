@@ -186,3 +186,51 @@ export const updateStatus = async (req, res) => {
     });
   }
 };
+
+// Create Transfer Request
+export const createTransferRequest = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { transferType, message } = req.body;
+
+    // Basic validation
+    if (!ticketId || !transferType || !message) {
+      return res.status(400).json({
+        message: "ticketId, transferType and message are required",
+        success: false,
+        data: [],
+      });
+    }
+
+    // Validate transferType
+    if (!["op", "gov"].includes(transferType)) {
+      return res.status(400).json({
+        message: "Invalid transferType. Must be 'op' or 'gov'",
+        success: false,
+        data: [],
+      });
+    }
+
+    // Call the model method
+    const result = await Ticket.OpenTransferRequest(
+      ticketId,
+      transferType,
+      message
+    );
+
+    // Handle response
+    if (!result.success) {
+      const statusCode = result.message.includes("not found") ? 404 : 400;
+      return res.status(statusCode).json(result);
+    }
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Create Transfer Request Error:", error);
+    res.status(500).json({
+      message: "Internal Server Error creating transfer request",
+      success: false,
+      data: null,
+    });
+  }
+};

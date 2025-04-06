@@ -3,20 +3,13 @@ import { uploadLogoImage } from "../Utils/uploadCloudinary.js";
 
 export const createOpCompany = async (req, res) => {
   try {
-    const { opCompany, adminName, mobile, username, password } = req.body;
+    const { opCompany, adminName, mobile } = req.body;
 
     const logoImage = req.file;
     const { url: logoUrl, public_id: logoPublicId } = await uploadLogoImage(
       logoImage.path
     );
-    if (
-      !opCompany ||
-      !adminName ||
-      !mobile ||
-      !username ||
-      !password ||
-      !logoImage
-    ) {
+    if (!opCompany || !adminName || !mobile || !logoImage) {
       return res.status(400).json({
         message: "All fields are required, including the logo image",
         success: false,
@@ -28,8 +21,7 @@ export const createOpCompany = async (req, res) => {
       opCompany,
       adminName,
       mobile,
-      username,
-      password,
+      logoPublicId: logoPublicId,
       logoImage: logoUrl,
     });
 

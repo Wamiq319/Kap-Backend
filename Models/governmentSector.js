@@ -3,11 +3,10 @@ import mongoose from "mongoose";
 const govSectorSchema = new mongoose.Schema(
   {
     govSector: { type: String, required: true },
-    logoImage: { type: String, required: true }, // Cloudinary URL
+    logoImage: { type: String, required: true },
+    logoPublicId: { type: String, required: true },
     adminName: { type: String, required: true },
     mobile: { type: String, required: true },
-    username: { type: String, required: true },
-    password: { type: String, required: true },
   },
   { versionKey: false }
 );
