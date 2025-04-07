@@ -112,15 +112,19 @@ export const resetUserPassword = async (req, res) => {
   const { newPassword, oldPassword } = req.body;
 
   if (!newPassword)
-    return res.status(400).json({ message: "New password is required" });
+    return res.status(400).json({
+      message: "Old and new password are required",
+      success: false,
+      data: [],
+    });
 
   try {
-    const { message, data } = await User.resetUserPassword(
+    const { message, succes, data } = await User.resetUserPassword(
       userId,
       newPassword,
       oldPassword
     );
-    res.status(200).json({ message, user: data, succes: true });
+    res.status(200).json({ message: message, data: [], succes: true });
   } catch (error) {
     res
       .status(400)

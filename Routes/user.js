@@ -6,6 +6,7 @@ import {
   getOpManagers,
   getKapEmployees,
   deleteUser,
+  resetUserPassword,
 } from "../Controllers/userController.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/gov-managers", getGovManagers);
 router.get("/op-managers", getOpManagers);
 router.get("/kap-employees", getKapEmployees);
 router.delete("/delete/:userId", deleteUser);
+router.put("/update-password/:employeeId", resetUserPassword);
 
 export default router;

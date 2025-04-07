@@ -35,26 +35,28 @@ export const createEmployee = async (req, res) => {
 };
 
 // Update Employee Password
-export const updateEmployeePassword = async (req, res) => {
+export const resestEmployeePassword = async (req, res) => {
   const { employeeId } = req.params;
-  const { newPassword } = req.body;
-
+  const { newPassword, oldPassword } = req.body;
+  console.log(req.body);
   if (!newPassword)
     return res.status(400).json({
+      message: "Old and new password are required",
       success: false,
-      message: "New password is required",
+      data: [],
     });
 
   try {
-    const { success, message, data } = await Employee.updatePassword(
+    const { success, message, data } = await Employee.rsesetEmployeePassword(
       employeeId,
-      newPassword
+      newPassword,
+      oldPassword
     );
 
-    const status = success ? 200 : 400;
-    res.status(status).json({ success, message, data });
+    res.status(200).json({ success, message, data });
   } catch (error) {
     res.status(500).json({
+      data: [],
       success: false,
       message: "Password update failed",
     });

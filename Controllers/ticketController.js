@@ -8,6 +8,7 @@ export const createTicket = async (req, res) => {
       location,
       requestType,
       expectedCompletionDate,
+      ticketBuilder,
     } = req.body;
 
     if (
@@ -15,15 +16,16 @@ export const createTicket = async (req, res) => {
       !requestor ||
       !location ||
       !requestType ||
-      !expectedCompletionDate
+      !expectedCompletionDate ||
+      !ticketBuilder
     ) {
-      console.log(govSector, adminName, mobile, username, password);
       return res.status(400).json({
         message: "All fields are required",
         data: [],
         success: false,
       });
     }
+    console;
 
     const { success, data, message } = await Ticket.createEntity({
       operator,
@@ -31,6 +33,7 @@ export const createTicket = async (req, res) => {
       location,
       requestType,
       expectedCompletionDate,
+      ticketBuilder,
     });
 
     res.status(200).json({ message: message, success: success, data: data });
@@ -150,7 +153,7 @@ export const addProgress = async (req, res) => {
 export const updateStatus = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { status } = req.body;
+    const { status, acceptedBy } = req.body;
     console.log(ticketId);
 
     if (!ticketId || !status) {
@@ -169,7 +172,7 @@ export const updateStatus = async (req, res) => {
       };
     }
 
-    const result = await Ticket.updateStatus(ticketId, status);
+    const result = await Ticket.updateStatus(ticketId, status, acceptedBy);
 
     if (!result.success) {
       const statusCode = result.message.includes("not found") ? 404 : 400;
@@ -181,6 +184,35 @@ export const updateStatus = async (req, res) => {
     console.error("Update Status Error:", error);
     res.status(500).json({
       message: "Internal Server Error updating status",
+      success: false,
+      data: null,
+    });
+  }
+};
+
+// Add Note to Ticket
+export const addNote = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { addedBy, text } = req.body;
+
+    // Validate input
+    if (!ticketId || !addedBy || !text) {
+      return res.status(400).json({
+        message: "ticketId, addedBy and text are all required",
+        success: false,
+        data: [],
+      });
+    }
+
+    // Call the model method
+    const result = await Ticket.addNote(ticketId, addedBy, text);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Add Note Error:", error);
+    res.status(500).json({
+      message: "Internal Server Error adding note",
       success: false,
       data: null,
     });

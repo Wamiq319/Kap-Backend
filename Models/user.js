@@ -164,6 +164,7 @@ userSchema.statics.login = async function (username, password) {
     return { success: false, message: "Error while login" };
   }
 };
+
 userSchema.statics.updateAdminProfile = async function (
   adminId,
   updates,
@@ -229,13 +230,22 @@ userSchema.statics.resetUserPassword = async function (
 ) {
   try {
     const user = await this.findById(userId);
-    if (!user) throw new Error("User not found");
-
-    if (user.role !== "admin" && oldPassword && user.password !== oldPassword) {
-      throw new Error("Incorrect old password");
+    if (!user) {
+      return {
+        message: "User not found",
+        success: false,
+        data: [],
+      };
+    }
+    if (user.password !== oldPassword) {
+      return {
+        message: "Incorrect old Password",
+        success: false,
+        data: [],
+      };
     }
 
-    const updatedUser = await this.findByIdAndUpdate(
+    await this.findByIdAndUpdate(
       userId,
       { password: newPassword },
       { new: true }
@@ -243,10 +253,10 @@ userSchema.statics.resetUserPassword = async function (
     return {
       success: true,
       message: "Password updated successfully",
-      data: updatedUser,
+      data: [],
     };
   } catch (error) {
-    return { success: false, message: error.message };
+    return { success: false, message: "Internal Server error", data: [] };
   }
 };
 

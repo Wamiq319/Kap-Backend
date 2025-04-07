@@ -121,28 +121,38 @@ employeeSchema.statics.login = async function (username, password) {
 };
 
 // UPDATE PASSWORD
-employeeSchema.statics.updatePassword = async function (
+employeeSchema.statics.rsesetEmployeePassword = async function (
   employeeId,
-  newPassword
+  newPassword,
+  oldPassword = null
 ) {
   try {
+    console.log(employeeId, newPassword, oldPassword);
+    const employee = await this.findById(employeeId);
+    if (!employee) {
+      return {
+        message: "Employee not found",
+        success: false,
+        data: [],
+      };
+    }
+    if (employee.password !== oldPassword) {
+      return {
+        message: "Incorrect old Password",
+        success: false,
+        data: [],
+      };
+    }
     const updatedEmployee = await this.findByIdAndUpdate(
       employeeId,
       { password: newPassword },
       { new: true }
     );
 
-    if (!updatedEmployee) {
-      return { success: false, message: "Employee not found" };
-    }
-
     return {
       success: true,
       message: "Password updated successfully",
-      data: {
-        id: updatedEmployee._id,
-        username: updatedEmployee.username,
-      },
+      data: [],
     };
   } catch (error) {
     console.error("Password update error:", error);
@@ -170,20 +180,32 @@ employeeSchema.statics.deleteEmployee = async function (employeeId) {
   }
 };
 
-// GET EMPLOYEES BY ROLE and entityId
+// GET EMPLOYEES
+// GET EMPLOYEES
 employeeSchema.statics.getEmployees = async function (entityData) {
   const { role, entityId } = entityData;
   try {
-    const employees = await this.find({
-      role: role,
-      entityId: entityId,
+    let query = {};
+
+    if (entityId === "Get_All") {
+      if (role) {
+        query.role = role;
+      }
+    } else {
+      query.role = role;
+      query.entityId = entityId;
+    }
+
+    const employees = await this.find(query).populate({
+      path: "entityId",
+      select: "opCompany govSector logoImage",
     });
 
     if (employees.length === 0) {
       return {
         success: true,
         data: [],
-        message: "No employees",
+        message: "No employees found",
       };
     }
 
@@ -195,17 +217,23 @@ employeeSchema.statics.getEmployees = async function (entityData) {
         username: emp.username,
         mobile: emp.mobile,
         password: emp.password,
+        role: emp.role,
+        entityId: emp.entityId?._id,
+        entityName:
+          emp.role === "op_employee"
+            ? emp.entityId?.opCompany
+            : emp.entityId?.govSector,
+        entityImage: emp.entityId?.logoImage,
       })),
-      message: "Employees Fetched",
+      message: "Employees fetched successfully",
     };
   } catch (error) {
     console.error("Get employees error:", error);
     return {
       success: false,
-      message: "Internal Server Error",
+      message: "Internal Server EK)rror",
       data: [],
     };
   }
 };
-
 export default mongoose.model("Employee", employeeSchema);

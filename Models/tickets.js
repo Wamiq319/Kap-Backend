@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 
 const ticketSchema = new mongoose.Schema({
+  ticketBuilder: { type: String, required: true },
+  ticketReciept: { type: String, default: null },
   ticketNumber: {
     type: String,
     unique: true,
@@ -76,19 +78,17 @@ const ticketSchema = new mongoose.Schema({
   notes: [
     {
       addedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        refPath: "notes.userType",
-        required: true,
-      },
-      userType: {
         type: String,
-        enum: ["OpCompany", "GovSector"],
         required: true,
       },
       text: { type: String, required: true },
       date: { type: Date, default: Date.now },
     },
   ],
+  closedAt: {
+    type: Date,
+    default: null,
+  },
 });
 
 ticketSchema.pre("save", async function (next) {
@@ -128,9 +128,14 @@ ticketSchema.statics.getAllEntities = async function (data) {
   try {
     const { userRole, userId } = data;
 
-    let query = { status: { $ne: "Closed" } };
+    let query = {};
     let projection = {};
     let populateAssignees = [];
+
+    // Default query excludes closed tickets unless user is kap_employee
+    if (userRole !== "kap_employee") {
+      query.status = { $ne: "Closed" };
+    }
 
     switch (userRole) {
       case "kap_employee":
@@ -146,7 +151,12 @@ ticketSchema.statics.getAllEntities = async function (data) {
           progress: 1,
           notes: 1,
           status: 1,
+          ticketBuilder: 1,
+          ticketReciept: 1,
+          closedAt: 1, // Add closedAt field for kap_employee
         };
+        // No status filter for kap_employee - they see all tickets
+        query = {};
         break;
 
       case "gov_manager":
@@ -195,9 +205,11 @@ ticketSchema.statics.getAllEntities = async function (data) {
           requestType: 1,
           status: 1,
           progress: 1,
+          notes: 1,
           expectedCompletionDate: 1,
           opTransferReq: 1,
           atachment: 1,
+          notes: 1,
         };
         break;
 
@@ -212,6 +224,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           progress: 1,
           expectedCompletionDate: 1,
           atachment: 1,
+          notes: 1,
           govTransferReq: 1,
         };
         break;
@@ -230,6 +243,11 @@ ticketSchema.statics.getAllEntities = async function (data) {
       queryBuilder = queryBuilder.populate(field, "name");
     });
 
+    // For kap_employee, sort by status (put closed tickets at the bottom)
+    if (userRole === "kap_employee") {
+      queryBuilder = queryBuilder.sort({ status: 1, createdAt: -1 });
+    }
+
     const entities = await queryBuilder.lean();
 
     const transformedEntities = entities.map((ticket) => {
@@ -241,8 +259,6 @@ ticketSchema.statics.getAllEntities = async function (data) {
         } else if (userRole === "op_manager") {
           assignedToName = ticket.assignedTo.opEmployee?.name || null;
         }
-        // For op_employee and gov_employee, we don't show assignedTo name
-        // as they're seeing tickets assigned to themselves
       }
 
       return {
@@ -250,6 +266,8 @@ ticketSchema.statics.getAllEntities = async function (data) {
         operator: ticket.operator ? ticket.operator.opCompany : null,
         requestor: ticket.requestor ? ticket.requestor.govSector : null,
         assignedTo: assignedToName,
+        // For kap_employee, add a flag to easily identify closed tickets in the UI
+        isClosed: userRole === "kap_employee" && ticket.status === "Closed",
       };
     });
 
@@ -343,7 +361,11 @@ ticketSchema.statics.updateAssignedTo = async function (
   }
 };
 
-ticketSchema.statics.updateStatus = async function (ticketId, newStatus) {
+ticketSchema.statics.updateStatus = async function (
+  ticketId,
+  newStatus,
+  acceptedBy
+) {
   try {
     const validTransitions = {
       Open: "In Progress",
@@ -363,11 +385,19 @@ ticketSchema.statics.updateStatus = async function (ticketId, newStatus) {
       };
     }
 
-    const updatedTicket = await this.findByIdAndUpdate(
-      ticketId,
-      { status: newStatus, updatedAt: new Date() },
-      { new: true }
-    );
+    // Prepare the update object
+    const update = {
+      status: newStatus,
+      updatedAt: new Date(),
+    };
+
+    if (newStatus === "In Progress" && acceptedBy) {
+      update.ticketReciept = acceptedBy;
+    }
+
+    const updatedTicket = await this.findByIdAndUpdate(ticketId, update, {
+      new: true,
+    });
 
     return {
       success: true,
@@ -481,6 +511,62 @@ ticketSchema.statics.OpenTransferRequest = async function (
     return {
       success: false,
       message: "Error creating transfer request",
+      data: null,
+    };
+  }
+};
+
+ticketSchema.statics.deleteClosedTickets = async function () {
+  try {
+    const result = await this.deleteMany({
+      status: "Closed",
+    });
+
+    console.log(`Deleted ${result.deletedCount} closed tickets`);
+    return result.deletedCount;
+  } catch (error) {
+    console.error("Error deleting closed tickets:", error);
+    throw error;
+  }
+};
+
+ticketSchema.statics.addNote = async function (ticketId, addedBy, text) {
+  try {
+    const updatedTicket = await this.findByIdAndUpdate(
+      ticketId,
+      {
+        $push: {
+          notes: {
+            addedBy: addedBy,
+            text: text,
+            date: new Date(),
+          },
+        },
+        $set: {
+          updatedAt: new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedTicket) {
+      return {
+        success: false,
+        message: "Ticket not found",
+        data: [],
+      };
+    }
+
+    return {
+      success: true,
+      message: "Note added successfully",
+      data: [],
+    };
+  } catch (error) {
+    console.error("Error adding note:", error);
+    return {
+      success: false,
+      message: "Error adding note to ticket",
       data: null,
     };
   }

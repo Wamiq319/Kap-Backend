@@ -28,7 +28,11 @@ app.use((req, res, next) => {
 //  Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
+  .then(() => {
+    console.log("✅ MongoDB Connected");
+
+    initializeCleanupJob();
+  })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // CORS Setup
@@ -66,6 +70,35 @@ app.use("/protected/gov", govRoutes);
 app.use("/protected/op", opRoutes);
 app.use("/protected/tkt", ticketRoutes);
 app.use("/protected/employee", employeeRoutes);
+
+function initializeCleanupJob() {
+  const Ticket = mongoose.model("Ticket");
+
+  runCleanup();
+
+  const cleanupInterval = setInterval(runCleanup, 24 * 60 * 60 * 1000); // 24 hours
+  // const cleanupInterval = setInterval(runCleanup, 60 * 1000); // 1 minute for testing
+
+  process.on("SIGINT", () => {
+    clearInterval(cleanupInterval);
+    process.exit(0);
+  });
+
+  process.on("SIGTERM", () => {
+    clearInterval(cleanupInterval);
+    process.exit(0);
+  });
+
+  async function runCleanup() {
+    try {
+      console.log("🚀 Starting ticket cleanup job...");
+      const deletedCount = await Ticket.deleteClosedTickets();
+      console.log(`✅ Deleted ${deletedCount} old closed tickets`);
+    } catch (error) {
+      console.error("❌ Error in ticket cleanup job:", error);
+    }
+  }
+}
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
