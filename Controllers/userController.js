@@ -124,7 +124,7 @@ export const resetUserPassword = async (req, res) => {
       newPassword,
       oldPassword
     );
-    res.status(200).json({ message: message, data: [], succes: true });
+    return res.status(200).json({ message: message, data: [], succes: succes });
   } catch (error) {
     res
       .status(400)

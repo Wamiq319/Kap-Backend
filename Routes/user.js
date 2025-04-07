@@ -17,6 +17,6 @@ router.get("/gov-managers", getGovManagers);
 router.get("/op-managers", getOpManagers);
 router.get("/kap-employees", getKapEmployees);
 router.delete("/delete/:userId", deleteUser);
-router.put("/update-password/:employeeId", resetUserPassword);
+router.put("/update-password/:userId", resetUserPassword);
 
 export default router;
