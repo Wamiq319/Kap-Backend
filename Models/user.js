@@ -165,63 +165,45 @@ userSchema.statics.login = async function (username, password) {
   }
 };
 
-userSchema.statics.updateAdminProfile = async function (
-  adminId,
-  updates,
-  oldPassword
-) {
+userSchema.statics.updateAdminProfile = async function (data) {
   try {
-    // Convert adminId to string to avoid issues with invalid ObjectId format
-    adminId = adminId.toString();
+    const { adminId, username, email, mobile, oldPassword, newPassword } = data;
 
-    console.log(adminId, updates, oldPassword);
-
-    // Find admin by adminId
-    const admin = await this.findById(adminId); // Use the adminId here to find the admin
+    const admin = await this.findById(adminId);
 
     if (!admin) {
-      return { success: false, message: "Admin not found" };
+      return { success: false, message: "Admin not found", data: [] };
     }
 
-    // Check if the old password matches
     if (admin.password !== oldPassword) {
-      return { success: false, message: "Invalid credentials" };
+      return {
+        success: false,
+        message: "Current password is incorrect",
+        data: [],
+      };
     }
 
-    // Check if username is being updated and validate uniqueness
-    if (updates.username) {
-      const existingUser = await this.findOne({ username: updates.username });
-      if (existingUser) {
-        return { success: false, message: "Username already taken" };
-      }
+    // Update all fields directly
+    admin.username = username;
+    admin.email = email;
+    admin.mobile = mobile;
+    admin.password = newPassword;
+
+    const updatedAdmin = await admin.save();
+    if (!updatedAdmin) {
+      return { success: false, message: "Update failed", data: [] };
+    } else {
+      return {
+        success: true,
+        message: "Admin updated successfully",
+        data: [],
+      };
     }
-
-    // List of allowed updates
-    const allowedUpdates = ["username", "password", "email", "mobile"];
-    const updateData = {};
-
-    // Validate and collect allowed updates
-    Object.keys(updates).forEach((key) => {
-      if (allowedUpdates.includes(key)) updateData[key] = updates[key];
-    });
-
-    // Update the admin profile
-    const updatedAdmin = await this.findByIdAndUpdate(adminId, updateData, {
-      new: true,
-    });
-
-    // Return success message with updated admin data
-    return {
-      success: true,
-      message: "Admin profile updated",
-      data: updatedAdmin,
-    };
   } catch (error) {
     console.log(error);
-    return { success: false, message: "Error updating admin" };
+    return { success: false, message: "Update failed", data: [] };
   }
 };
-
 // Reset user password
 userSchema.statics.resetUserPassword = async function (
   userId,

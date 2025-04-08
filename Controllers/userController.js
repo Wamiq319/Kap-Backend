@@ -1,5 +1,6 @@
 import User from "../Models/user.js";
 import Employee from "../Models/Employee.js";
+import { sendWhatsAppMessage } from "../Utils/sendWhatsAppMessage.js";
 
 import dotenv from "dotenv";
 
@@ -89,20 +90,45 @@ export const createUser = async (req, res) => {
 // Update Admin Profile (Requires old password)
 export const updateAdminProfile = async (req, res) => {
   const { adminId } = req.params;
-  const { username, password, email, mobileNumber, oldPassword } = req.body;
-
-  if (!oldPassword)
-    return res.status(400).json({ message: "Old password is required" });
+  const { username, password, email, mobile, oldPassword, newPassword } =
+    req.body;
+  console.log(req.body);
+  if (
+    !oldPassword &&
+    !username &&
+    !password &&
+    !email &&
+    !mobile &&
+    !newPassword
+  ) {
+    return res.status(400).json({
+      message: "Old and new password are required",
+      success: false,
+      data: [],
+    });
+  }
 
   try {
-    const { message, data } = await User.updateAdminProfile(
+    const { message, data, success } = await User.updateAdminProfile({
       adminId,
-      { username, password, email, mobileNumber },
-      oldPassword
-    );
-    res.status(200).json({ message: message, status: true, admin: data });
+      username,
+      password,
+      email,
+      mobile,
+      oldPassword,
+      newPassword,
+    });
+    return res.status(200).json({
+      message: message,
+      success: success,
+      data: [],
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    return res.status(400).json({
+      message: "Error in Upadting",
+      success: false,
+      data: [],
+    });
   }
 };
 
@@ -119,12 +145,14 @@ export const resetUserPassword = async (req, res) => {
     });
 
   try {
-    const { message, succes, data } = await User.resetUserPassword(
+    const { message, success } = await User.resetUserPassword(
       userId,
       newPassword,
       oldPassword
     );
-    return res.status(200).json({ message: message, data: [], succes: succes });
+    return res
+      .status(200)
+      .json({ message: message, data: [], success: success });
   } catch (error) {
     res
       .status(400)

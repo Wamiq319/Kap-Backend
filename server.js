@@ -14,6 +14,8 @@ import govRoutes from "./Routes/gov.js";
 import opRoutes from "./Routes/op.js";
 import ticketRoutes from "./Routes/ticket.js";
 
+import { sendWhatsAppMessage } from "./Utils/sendWhatsAppMessage.js";
+
 dotenv.config();
 
 const app = express();
@@ -32,6 +34,7 @@ mongoose
     console.log("✅ MongoDB Connected");
 
     initializeCleanupJob();
+    sendWhatsAppMessage("+923480588054", "This is a test message");
   })
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
