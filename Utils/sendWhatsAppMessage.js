@@ -9,9 +9,7 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Get numbers from environment
-const sandboxNumber =
-  process.env.TWILIO_SANDBOX_NUMBER || "whatsapp:+14155238886";
+// Get production number from environment
 const productionNumber = process.env.TWILIO_WHATSAPP_NUMBER;
 
 /**
@@ -20,10 +18,8 @@ const productionNumber = process.env.TWILIO_WHATSAPP_NUMBER;
  * @returns {string} Formatted number
  */
 function formatPhoneNumber(rawNumber) {
-  // Remove all non-digit characters
   let cleaned = rawNumber.replace(/\D/g, "");
 
-  // Handle Saudi numbers
   if (cleaned.startsWith("966")) {
     return `+${cleaned}`;
   }
@@ -40,42 +36,24 @@ function formatPhoneNumber(rawNumber) {
  * Sends WhatsApp message
  * @param {string} phoneNumber - Recipient phone number (any format)
  * @param {string} message - Message content
- * @returns {Promise<object>} Twilio response or sandbox simulation
+ * @returns {Promise<boolean>} True if message sent successfully, false otherwise
  */
 export async function sendWhatsAppMessage(phoneNumber, message) {
   const formattedTo = formatPhoneNumber(phoneNumber);
-  const from =
-    process.env.NODE_ENV === "production" ? productionNumber : sandboxNumber;
 
-  // Validate we have a from number
-  if (!from) {
-    const error = new Error(
-      "Missing WhatsApp from number in environment variables"
+  // Validate production number
+  if (!productionNumber) {
+    console.error(
+      "Missing WhatsApp production number in environment variables"
     );
-    console.error(error.message);
-    throw error;
+    return false; // Return false if no production number is found
   }
 
   try {
-    // In non-production, log instead of sending
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[WhatsApp Sandbox]", {
-        from: from,
-        to: formattedTo,
-        message: message,
-      });
-      return {
-        status: "sandbox",
-        from: from,
-        to: formattedTo,
-        message: message,
-      };
-    }
-
-    // Production - real message
+    // Send real message in production
     const response = await client.messages.create({
       body: message,
-      from: from,
+      from: productionNumber,
       to: `whatsapp:${formattedTo}`,
     });
 
@@ -84,12 +62,19 @@ export async function sendWhatsAppMessage(phoneNumber, message) {
       to: formattedTo,
       timestamp: new Date().toISOString(),
     });
-    return response;
+
+    // Check if the message was successfully sent
+    if (response.status === "queued" || response.status === "sent") {
+      return true; // Return true if message is successfully sent or queued for delivery
+    } else {
+      console.error("Message failed to send. Status:", response.status);
+      return false; // Return false if message failed
+    }
   } catch (error) {
     console.error("WhatsApp send failed:", {
       to: formattedTo,
       error: error.message,
     });
-    throw new Error(`Failed to send WhatsApp: ${error.message}`);
+    return false; // Return false if there is an error during message sending
   }
 }

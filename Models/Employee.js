@@ -50,6 +50,15 @@ employeeSchema.statics.generateUsername = async function (role, baseName) {
 // CREATE EMPLOYEE with auto-generated username
 employeeSchema.statics.createEmployee = async function (employeeData) {
   try {
+    const existingUser = await this.findOne({ mobile: employeeData.mobile });
+    if (existingUser) {
+      return {
+        success: false,
+        message:
+          "Mobile number already exists in the system. Use another number",
+        data: [],
+      };
+    }
     // Generate username
     employeeData.username = await this.generateUsername(
       employeeData.role,
@@ -60,7 +69,7 @@ employeeSchema.statics.createEmployee = async function (employeeData) {
     return {
       success: true,
       message: newEmployee.username + " created successfully",
-      data: [],
+      data: newEmployee,
     };
   } catch (error) {
     console.error("Create employee error:", error);

@@ -62,7 +62,7 @@ export const createUser = async (req, res) => {
     sectorId,
     jobTitle,
   } = req.body;
-  console.log(req.body);
+
   if (!password || !mobile || !role)
     return res.status(400).json({ message: "Fill all the fields" });
 
@@ -79,11 +79,39 @@ export const createUser = async (req, res) => {
       jobTitle,
     });
 
-    res.status(201).json({ success: success, message: message, user: data });
+    if (success) {
+      const whatsappMessage = `Your KAP login credentials are:\nUsername: ${data.username}\nPassword: ${data.password}`;
+
+      // Send WhatsApp message and check success
+      const sendResult = await sendWhatsAppMessage(
+        data.mobile,
+        whatsappMessage
+      );
+
+      if (sendResult) {
+        // Send user created successfully with WhatsApp message sent
+        return res.status(201).json({
+          success: true,
+          message: `${message}, and WhatsApp message sent successfully.`,
+          user: data,
+        });
+      } else {
+        // If WhatsApp message failed, send a different response
+        return res.status(201).json({
+          success: false,
+          message: `${message}, but unable to send WhatsApp message.`,
+          user: data,
+        });
+      }
+    } else {
+      return res.status(201).json({ success: false, message: message });
+    }
   } catch (error) {
-    res
-      .status(500)
-      .json({ succes: false, message: "Internal Server Error", user: null });
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error while creating user",
+    });
   }
 };
 

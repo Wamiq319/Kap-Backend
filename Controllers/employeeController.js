@@ -4,7 +4,7 @@ import { sendWhatsAppMessage } from "../Utils/sendWhatsAppMessage.js";
 // Create Employee
 export const createEmployee = async (req, res) => {
   const { name, username, mobile, password, role, entityId } = req.body;
-  console.log(req.body);
+
   if (!username || !mobile || !password || !role || !entityId) {
     return res.status(400).json({
       success: false,
@@ -22,9 +22,33 @@ export const createEmployee = async (req, res) => {
       role,
       entityId,
     });
+    if (success) {
+      const whatsappMessage = `Your KAP login credentials are:\nUsername: ${data.username}\nPassword: ${data.password}`;
 
-    const status = success ? 201 : 400;
-    res.status(status).json({ success, message, data });
+      // Send WhatsApp message and check success
+      const sendResult = await sendWhatsAppMessage(
+        data.mobile,
+        whatsappMessage
+      );
+
+      if (sendResult) {
+        // Send user created successfully with WhatsApp message sent
+        return res.status(201).json({
+          success: true,
+          message: `${message}, and WhatsApp message sent successfully.`,
+          user: data,
+        });
+      } else {
+        // If WhatsApp message failed, send a different response
+        return res.status(201).json({
+          success: false,
+          message: `${message}, but unable to send WhatsApp message.`,
+          user: data,
+        });
+      }
+    } else {
+      return res.status(201).json({ success: false, message: message });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({

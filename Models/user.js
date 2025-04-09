@@ -82,6 +82,15 @@ userSchema.statics.generateUsername = async function (role, username) {
 // Create user
 userSchema.statics.createUser = async function (userData) {
   try {
+    const existingUser = await this.findOne({ mobile: userData.mobile });
+    if (existingUser) {
+      return {
+        success: false,
+        message:
+          "Mobile number already exists in the system. Use another number",
+        data: [],
+      };
+    }
     userData.username = await this.generateUsername(
       userData.role,
       userData.username
@@ -91,7 +100,7 @@ userSchema.statics.createUser = async function (userData) {
     return {
       success: true,
       message: newUser.username + " created Succesfully",
-      data: [],
+      data: newUser,
     };
   } catch (error) {
     console.log(error);
