@@ -14,7 +14,17 @@ const govSectorSchema = new mongoose.Schema(
 // Create a new Company Entity
 govSectorSchema.statics.createEntity = async function (entityData) {
   try {
+    const existingEntity = await this.findOne({ mobile: entityData.mobile });
+    if (existingEntity) {
+      return {
+        success: false,
+        message:
+          "Mobile number already exists in the system. Use another number",
+        data: [],
+      };
+    }
     const newEntity = await this.create(entityData);
+
     if (newEntity) {
       return {
         success: true,
