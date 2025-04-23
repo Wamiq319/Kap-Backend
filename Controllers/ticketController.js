@@ -16,7 +16,6 @@ export const createTicket = async (req, res) => {
       !requestor ||
       !location ||
       !requestType ||
-      !expectedCompletionDate ||
       !ticketBuilder
     ) {
       return res.status(400).json({
@@ -121,7 +120,7 @@ export const updateAssignedTo = async (req, res) => {
 export const addProgress = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { percentage, observation } = req.body;
+    const { percentage, observation, addedBy } = req.body;
 
     if (!ticketId || percentage === undefined || !observation) {
       return res.status(400).json({
@@ -131,7 +130,12 @@ export const addProgress = async (req, res) => {
       });
     }
 
-    const result = await Ticket.addProgress(ticketId, percentage, observation);
+    const result = await Ticket.addProgress(
+      ticketId,
+      percentage,
+      observation,
+      addedBy
+    );
 
     if (!result.success) {
       const statusCode = result.message.includes("not found") ? 404 : 400;
@@ -153,8 +157,7 @@ export const addProgress = async (req, res) => {
 export const updateStatus = async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const { status, acceptedBy } = req.body;
-    console.log(ticketId);
+    const { status, acceptedBy, expectedCompletionDate } = req.body;
 
     if (!ticketId || !status) {
       return res.status(400).json({
@@ -172,12 +175,12 @@ export const updateStatus = async (req, res) => {
       };
     }
 
-    const result = await Ticket.updateStatus(ticketId, status, acceptedBy);
-
-    if (!result.success) {
-      const statusCode = result.message.includes("not found") ? 404 : 400;
-      return res.status(statusCode).json(result);
-    }
+    const result = await Ticket.updateStatus(
+      ticketId,
+      status,
+      acceptedBy,
+      expectedCompletionDate
+    );
 
     res.status(200).json(result);
   } catch (error) {

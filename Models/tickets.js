@@ -60,6 +60,7 @@ const ticketSchema = new mongoose.Schema({
     {
       percentage: { type: Number, min: 0, max: 100, required: true },
       observation: { type: String, required: true },
+      addedBy: { type: String, required: true, default: "N/A" },
       date: { type: Date, default: Date.now },
     },
   ],
@@ -176,6 +177,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           createdAt: 1,
           govTransferReq: 1,
           "assignedTo.govEmployee": 1,
+          notes: 1,
         };
         populateAssignees = ["assignedTo.govEmployee"];
         break;
@@ -192,6 +194,7 @@ ticketSchema.statics.getAllEntities = async function (data) {
           atachment: 1,
           opTransferReq: 1,
           "assignedTo.opEmployee": 1,
+          notes: 1,
         };
         populateAssignees = ["assignedTo.opEmployee"];
         break;
@@ -209,7 +212,6 @@ ticketSchema.statics.getAllEntities = async function (data) {
           expectedCompletionDate: 1,
           opTransferReq: 1,
           atachment: 1,
-          notes: 1,
         };
         break;
 
@@ -364,35 +366,61 @@ ticketSchema.statics.updateAssignedTo = async function (
 ticketSchema.statics.updateStatus = async function (
   ticketId,
   newStatus,
-  acceptedBy
+  acceptedBy,
+  expectedCompletionDate
 ) {
   try {
     const validTransitions = {
-      Open: "In Progress",
-      "In Progress": "Completed",
-      Completed: "Closed",
+      Open: ["In Progress"],
+      "In Progress": ["Completed"],
     };
 
     const ticket = await this.findById(ticketId);
-    if (!ticket)
+    if (!ticket) {
       return { success: false, message: "Ticket not found", data: [] };
+    }
 
-    if (validTransitions[ticket.status] !== newStatus) {
+    // Special case: Allow closing from any status
+    if (newStatus === "Closed") {
+      const update = {
+        status: newStatus,
+        closedAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updatedTicket = await this.findByIdAndUpdate(ticketId, update, {
+        new: true,
+      });
+
       return {
-        success: false,
-        message: `Invalid status transition currently is in ${ticket.status} status`,
+        success: true,
+        message: "Ticket closed successfully",
         data: [],
       };
     }
 
-    // Prepare the update object
+    // For non-Closed status changes, enforce normal transitions
+    if (!validTransitions[ticket.status]?.includes(newStatus)) {
+      return {
+        success: false,
+        message: `Invalid status transition from ${ticket.status} to ${newStatus}`,
+        data: [],
+      };
+    }
+
+    // Handle other status updates
     const update = {
       status: newStatus,
       updatedAt: new Date(),
     };
 
-    if (newStatus === "In Progress" && acceptedBy) {
-      update.ticketReciept = acceptedBy;
+    if (newStatus === "In Progress") {
+      if (acceptedBy) {
+        update.ticketReciept = acceptedBy;
+      }
+      if (expectedCompletionDate) {
+        update.expectedCompletionDate = expectedCompletionDate;
+      }
     }
 
     const updatedTicket = await this.findByIdAndUpdate(ticketId, update, {
@@ -413,10 +441,12 @@ ticketSchema.statics.updateStatus = async function (
     };
   }
 };
+
 ticketSchema.statics.addProgress = async function (
   ticketId,
   percentage,
-  observation
+  observation,
+  addedBy
 ) {
   try {
     if (!observation || typeof observation !== "string") {
@@ -434,6 +464,7 @@ ticketSchema.statics.addProgress = async function (
           progress: {
             percentage: percentage,
             observation: observation,
+            addedBy: addedBy,
             date: new Date(),
           },
         },
