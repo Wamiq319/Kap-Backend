@@ -12,8 +12,10 @@ export const createEmployee = async (req, res) => {
       data: [],
     });
   }
-
+  console.log(req.body);
   try {
+    // Validate mobile number format
+
     const { success, message, data } = await Employee.createEmployee({
       name,
       username,
@@ -22,24 +24,27 @@ export const createEmployee = async (req, res) => {
       role,
       entityId,
     });
+    console.log(data);
     if (success) {
-      const whatsappMessage = `Your KAP login credentials are:\nUsername: ${data.username}\nPassword: ${data.password}`;
+      // Ensure mobile number is in international format
+      const formattedMobile = mobile.startsWith("+") ? mobile : `+91${mobile}`;
 
-      // Send WhatsApp message and check success
-      const sendResult = await sendWhatsAppMessage(
-        data.mobile,
-        whatsappMessage
-      );
+      const messageData = {
+        phoneNumber: formattedMobile, // Use the formatted number
+        name: data.name,
+        username: data.username,
+        password: data.password,
+      };
+
+      const sendResult = await sendWhatsAppMessage(messageData);
 
       if (sendResult) {
-        // Send user created successfully with WhatsApp message sent
         return res.status(201).json({
           success: true,
           message: `${message}, and WhatsApp message sent successfully.`,
           user: data,
         });
       } else {
-        // If WhatsApp message failed, send a different response
         return res.status(201).json({
           success: false,
           message: `${message}, but unable to send WhatsApp message.`,
@@ -50,7 +55,7 @@ export const createEmployee = async (req, res) => {
       return res.status(201).json({ success: false, message: message });
     }
   } catch (error) {
-    console.log(error);
+    console.error("Error in createEmployee:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create employee",

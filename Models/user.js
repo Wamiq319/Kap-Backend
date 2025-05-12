@@ -91,10 +91,17 @@ userSchema.statics.createUser = async function (userData) {
         data: [],
       };
     }
-    userData.username = await this.generateUsername(
-      userData.role,
-      userData.username
-    );
+    // Check if the username already exists
+    const existingUsername = await this.findOne({
+      username: userData.username,
+    });
+    if (existingUsername) {
+      return {
+        success: false,
+        message: "User not created.Username already exists",
+        data: [],
+      };
+    }
 
     const newUser = await this.create(userData);
     return {

@@ -1,6 +1,6 @@
-// utils/whatsapp.js
 import twilio from "twilio";
 import dotenv from "dotenv";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 dotenv.config();
 
@@ -9,72 +9,50 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Get production number from environment
-const productionNumber = process.env.TWILIO_WHATSAPP_NUMBER;
+const sender = process.env.TWILIO_WHATSAPP_NUMBER;
+const templateSid = process.env.TWILIO_TEMPLATE_SID;
 
-/**
- * Formats phone number to E.164 standard
- * @param {string} rawNumber - Raw phone number input
- * @returns {string} Formatted number
- */
-function formatPhoneNumber(rawNumber) {
-  let cleaned = rawNumber.replace(/\D/g, "");
+export async function sendWhatsAppMessage(messageData) {
+  const { phoneNumber, name, username, password } = messageData;
 
-  if (cleaned.startsWith("966")) {
-    return `+${cleaned}`;
-  }
-  if (cleaned.startsWith("0")) {
-    return `+966${cleaned.substring(1)}`;
-  }
-  if (!cleaned.startsWith("+")) {
-    return `+${cleaned}`;
-  }
-  return cleaned;
-}
-
-/**
- * Sends WhatsApp message
- * @param {string} phoneNumber - Recipient phone number (any format)
- * @param {string} message - Message content
- * @returns {Promise<boolean>} True if message sent successfully, false otherwise
- */
-export async function sendWhatsAppMessage(phoneNumber, message) {
-  const formattedTo = formatPhoneNumber(phoneNumber);
-
-  // Validate production number
-  if (!productionNumber) {
-    console.error(
-      "Missing WhatsApp production number in environment variables"
-    );
-    return false; // Return false if no production number is found
+  // Validate phone number exists
+  if (!phoneNumber) {
+    console.error("No phone number provided");
+    return false;
   }
 
   try {
-    // Send real message in production
-    const response = await client.messages.create({
-      body: message,
-      from: productionNumber,
-      to: `whatsapp:${formattedTo}`,
-    });
+    // Parse and validate international phone number
+    const parsedNumber = parsePhoneNumberFromString(phoneNumber);
 
-    console.log("WhatsApp message sent:", {
-      sid: response.sid,
-      to: formattedTo,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Check if the message was successfully sent
-    if (response.status === "queued" || response.status === "sent") {
-      return true; // Return true if message is successfully sent or queued for delivery
-    } else {
-      console.error("Message failed to send. Status:", response.status);
-      return false; // Return false if message failed
+    if (!parsedNumber || !parsedNumber.isValid()) {
+      console.error("Invalid phone number format:", phoneNumber);
+      return false;
     }
-  } catch (error) {
-    console.error("WhatsApp send failed:", {
-      to: formattedTo,
-      error: error.message,
+
+    // Format for WhatsApp (E.164 format with whatsapp: prefix)
+    const to = `whatsapp:${parsedNumber.format("E.164")}`;
+
+    const response = await client.messages.create({
+      from: sender,
+      to: to,
+      contentSid: templateSid,
+      contentType: "template",
+      contentVariables: JSON.stringify({
+        1: name || "",
+        2: username || "",
+        3: password || "",
+      }),
     });
-    return false; // Return false if there is an error during message sending
+
+    console.log("Message sent to:", to, "SID:", response.sid);
+    return ["queued", "sent", "delivered"].includes(response.status);
+  } catch (error) {
+    console.error("Failed to send WhatsApp message:", {
+      error: error.message,
+      phoneNumber,
+      templateSid,
+    });
+    return false;
   }
 }

@@ -59,11 +59,17 @@ employeeSchema.statics.createEmployee = async function (employeeData) {
         data: [],
       };
     }
+    const existingUsername = await this.findOne({
+      username: employeeData.username,
+    });
+    if (existingUsername) {
+      return {
+        success: false,
+        message: "User not created.Username already exists",
+        data: [],
+      };
+    }
     // Generate username
-    employeeData.username = await this.generateUsername(
-      employeeData.role,
-      employeeData.name.substring(0, 3).toLowerCase()
-    );
 
     const newEmployee = await this.create(employeeData);
     return {

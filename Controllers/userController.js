@@ -49,7 +49,6 @@ export const createSuperAdmin = async (req, res) => {
   res.status(200).json({ message: "Super Admin Created", User: superUser });
 };
 
-// Create User
 export const createUser = async (req, res) => {
   const {
     username,
@@ -63,8 +62,14 @@ export const createUser = async (req, res) => {
     jobTitle,
   } = req.body;
 
-  if (!password || !mobile || !role)
-    return res.status(400).json({ message: "Fill all the fields" });
+  // Validate required fields
+  if (!username || !password || !mobile || !role) {
+    return res.status(400).json({
+      success: false,
+      message: "Username, password, mobile, and role are required fields",
+      data: [],
+    });
+  }
 
   try {
     const { success, message, data } = await User.createUser({
@@ -80,23 +85,24 @@ export const createUser = async (req, res) => {
     });
 
     if (success) {
-      const whatsappMessage = `Your KAP login credentials are:\nUsername: ${data.username}\nPassword: ${data.password}`;
+      // Prepare message data for template
+      const messageData = {
+        phoneNumber: mobile, // Will be parsed in sendWhatsAppMessage
+        name: data.name || "User", // Fallback if name not provided
+        username: data.username,
+        password: data.password,
+      };
 
-      // Send WhatsApp message and check success
-      const sendResult = await sendWhatsAppMessage(
-        data.mobile,
-        whatsappMessage
-      );
+      // Send WhatsApp message using template
+      const sendResult = await sendWhatsAppMessage(messageData);
 
       if (sendResult) {
-        // Send user created successfully with WhatsApp message sent
         return res.status(201).json({
           success: true,
           message: `${message}, and WhatsApp message sent successfully.`,
           user: data,
         });
       } else {
-        // If WhatsApp message failed, send a different response
         return res.status(201).json({
           success: false,
           message: `${message}, but unable to send WhatsApp message.`,
@@ -104,13 +110,17 @@ export const createUser = async (req, res) => {
         });
       }
     } else {
-      return res.status(201).json({ success: false, message: message });
+      return res.status(201).json({
+        success: false,
+        message: message,
+      });
     }
   } catch (error) {
-    console.error(error);
+    console.error("Error in createUser:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error while creating user",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
