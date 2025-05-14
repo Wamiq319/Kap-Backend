@@ -14,6 +14,8 @@ import govRoutes from "./Routes/gov.js";
 import opRoutes from "./Routes/op.js";
 import ticketRoutes from "./Routes/ticket.js";
 
+import { sendSMSMessage } from "./Utils/sendMessage.js";
+
 dotenv.config();
 
 const app = express();

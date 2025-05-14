@@ -9,20 +9,18 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-const sender = process.env.TWILIO_WHATSAPP_NUMBER;
+const sender = process.env.TWILIO_PHONE_NUMBER;
 const templateSid = process.env.TWILIO_TEMPLATE_SID;
 
 export async function sendWhatsAppMessage(messageData) {
   const { phoneNumber, name, username, password } = messageData;
 
-  // Validate phone number exists
   if (!phoneNumber) {
     console.error("No phone number provided");
     return false;
   }
 
   try {
-    // Parse and validate international phone number
     const parsedNumber = parsePhoneNumberFromString(phoneNumber);
 
     if (!parsedNumber || !parsedNumber.isValid()) {
