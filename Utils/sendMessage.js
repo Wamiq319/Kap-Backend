@@ -1,6 +1,5 @@
 import twilio from "twilio";
 import dotenv from "dotenv";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 dotenv.config();
 
@@ -10,51 +9,36 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Get sender number from environment (will change later)
-const senderNumber = process.env.TWILIO_PHONE_NUMBER;
+const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
 
-export async function sendSMSMessage(messageData) {
-  const { phoneNumber, message } = messageData;
+// Debug log to verify the SID is loaded
+console.log("Messaging Service SID:", messagingServiceSid);
 
-  // Validate required fields
+export async function sendSMS({ phoneNumber, message }) {
+  // Basic validation
   if (!phoneNumber || !message) {
-    console.error(
-      "Missing required parameters: phoneNumber and message are required"
-    );
     return {
       success: false,
-      error: "Missing required parameters",
+      error: "phoneNumber and message are required",
+    };
+  }
+
+  if (!messagingServiceSid) {
+    return {
+      success: false,
+      error: "Twilio Messaging Service SID is not configured",
     };
   }
 
   try {
-    // Parse and validate phone number
-    const parsedNumber = parsePhoneNumberFromString(phoneNumber);
+    // Clean and format phone number
+    const to = `+${phoneNumber.replace(/\D/g, "")}`;
 
-    if (!parsedNumber || !parsedNumber.isValid()) {
-      console.error("Invalid phone number format:", phoneNumber);
-      return {
-        success: false,
-        error: "Invalid phone number format",
-      };
-    }
-
-    const to = parsedNumber.format("E.164");
-
-    const from = senderNumber;
-
+    // Send via Messaging Service
     const response = await client.messages.create({
       body: message,
-      from: from,
+      messagingServiceSid: messagingServiceSid,
       to: to,
-      statusCallback: process.env.TWILIO_STATUS_CALLBACK_URL,
-      validityPeriod: 1440,
-    });
-
-    console.log("SMS sent successfully:", {
-      to: to,
-      sid: response.sid,
-      status: response.status,
     });
 
     return {
@@ -63,13 +47,6 @@ export async function sendSMSMessage(messageData) {
       status: response.status,
     };
   } catch (error) {
-    console.error("SMS sending failed:", {
-      error: error.message,
-      code: error.code,
-      phoneNumber: phoneNumber,
-      moreInfo: error.moreInfo,
-    });
-
     return {
       success: false,
       error: error.message,

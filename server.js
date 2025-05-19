@@ -14,7 +14,7 @@ import govRoutes from "./Routes/gov.js";
 import opRoutes from "./Routes/op.js";
 import ticketRoutes from "./Routes/ticket.js";
 
-import { sendSMSMessage } from "./Utils/sendMessage.js";
+import { sendSMS } from "./Utils/sendMessage.js";
 
 dotenv.config();
 
@@ -93,6 +93,16 @@ function initializeCleanupJob() {
 
   async function runCleanup() {
     try {
+      const result = await sendSMS({
+        phoneNumber: "+966550727019", // Saudi number in any format
+        message: "Your verification code is 12345",
+      });
+
+      if (result.success) {
+        console.log("Message sent:", result.sid);
+      } else {
+        console.error("Failed:", result.error);
+      }
       console.log("🚀 Starting ticket cleanup job...");
       const deletedCount = await Ticket.deleteClosedTickets();
       console.log(`✅ Deleted ${deletedCount} old closed tickets`);
