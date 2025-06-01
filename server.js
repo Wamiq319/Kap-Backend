@@ -94,8 +94,8 @@ function initializeCleanupJob() {
   async function runCleanup() {
     try {
       const result = await sendSMS({
-        phoneNumber: "+966550727019", // Saudi number in any format
-        message: "Your verification code is 12345",
+        phoneNumber: "+966 50 604 4758",
+        message: "This is Latest Test Message from Wamiq For Kap",
       });
 
       if (result.success) {

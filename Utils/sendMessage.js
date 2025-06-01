@@ -1,56 +1,26 @@
-import twilio from "twilio";
-import dotenv from "dotenv";
+import axios from "axios";
 
-dotenv.config();
+const SMS_USER = "khalid2u";
+const SMS_SECRET =
+  "c121137bbf059125e59c12542d3e3fdedf62a1edd82cbbb9bfc3e02dbd99f6d4";
+const SMS_SENDER = "kas.pub.sa";
 
-// Initialize Twilio client
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
-const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-
-// Debug log to verify the SID is loaded
-console.log("Messaging Service SID:", messagingServiceSid);
-
-export async function sendSMS({ phoneNumber, message }) {
-  // Basic validation
-  if (!phoneNumber || !message) {
-    return {
-      success: false,
-      error: "phoneNumber and message are required",
-    };
-  }
-
-  if (!messagingServiceSid) {
-    return {
-      success: false,
-      error: "Twilio Messaging Service SID is not configured",
-    };
-  }
+export async function sendSMS(to, message) {
+  const url = "https://www.dreams.sa/index.php/api/sendsms/";
+  const params = new URLSearchParams({
+    user: SMS_USER,
+    secret_key: SMS_SECRET,
+    sender: SMS_SENDER,
+    to,
+    message,
+  });
 
   try {
-    // Clean and format phone number
-    const to = `+${phoneNumber.replace(/\D/g, "")}`;
-
-    // Send via Messaging Service
-    const response = await client.messages.create({
-      body: message,
-      messagingServiceSid: messagingServiceSid,
-      to: to,
-    });
-
-    return {
-      success: true,
-      sid: response.sid,
-      status: response.status,
-    };
+    const res = await axios.get(`${url}?${params.toString()}`);
+    console.log("SMS response:", res.data);
+    return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error.message,
-      code: error.code,
-    };
+    console.error("SMS Error:", error.message);
+    return { success: false, error: error.message };
   }
 }
