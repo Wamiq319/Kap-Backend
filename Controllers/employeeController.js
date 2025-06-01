@@ -1,5 +1,4 @@
 import Employee from "../Models/Employee.js";
-import { sendWhatsAppMessage } from "../Utils/sendWhatsAppMessage.js";
 
 // Create Employee
 export const createEmployee = async (req, res) => {
@@ -27,30 +26,12 @@ export const createEmployee = async (req, res) => {
     console.log(data);
     if (success) {
       // Ensure mobile number is in international format
-      const formattedMobile = mobile.startsWith("+") ? mobile : `+91${mobile}`;
 
-      const messageData = {
-        phoneNumber: formattedMobile, // Use the formatted number
-        name: data.name,
-        username: data.username,
-        password: data.password,
-      };
-
-      const sendResult = await sendWhatsAppMessage(messageData);
-
-      if (sendResult) {
-        return res.status(201).json({
-          success: true,
-          message: `${message}, and WhatsApp message sent successfully.`,
-          user: data,
-        });
-      } else {
-        return res.status(201).json({
-          success: false,
-          message: `${message}, but unable to send WhatsApp message.`,
-          user: data,
-        });
-      }
+      return res.status(201).json({
+        success: false,
+        message: `${message}, but unable to send WhatsApp message.`,
+        user: data,
+      });
     } else {
       return res.status(201).json({ success: false, message: message });
     }

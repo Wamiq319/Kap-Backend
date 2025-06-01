@@ -1,6 +1,5 @@
 import User from "../Models/user.js";
 import Employee from "../Models/Employee.js";
-import { sendWhatsAppMessage } from "../Utils/sendWhatsAppMessage.js";
 
 import dotenv from "dotenv";
 
@@ -86,29 +85,12 @@ export const createUser = async (req, res) => {
 
     if (success) {
       // Prepare message data for template
-      const messageData = {
-        phoneNumber: mobile, // Will be parsed in sendWhatsAppMessage
-        name: data.name || "User", // Fallback if name not provided
-        username: data.username,
-        password: data.password,
-      };
 
-      // Send WhatsApp message using template
-      const sendResult = await sendWhatsAppMessage(messageData);
-
-      if (sendResult) {
-        return res.status(201).json({
-          success: true,
-          message: `${message}, and WhatsApp message sent successfully.`,
-          user: data,
-        });
-      } else {
-        return res.status(201).json({
-          success: false,
-          message: `${message}, but unable to send WhatsApp message.`,
-          user: data,
-        });
-      }
+      return res.status(201).json({
+        success: false,
+        message: `${message}, but unable to send WhatsApp message.`,
+        user: data,
+      });
     } else {
       return res.status(201).json({
         success: false,
