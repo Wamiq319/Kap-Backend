@@ -1,5 +1,6 @@
 import User from "../Models/user.js";
 import Employee from "../Models/Employee.js";
+import { sendSMS } from "../Utils/sendMessage.js";
 
 import dotenv from "dotenv";
 
@@ -85,16 +86,35 @@ export const createUser = async (req, res) => {
 
     if (success) {
       // Prepare message data for template
+      console.log(
+        `It is data:`,
+        data,
+        `| It is success:`,
+        success,
+        `| It is message:`,
+        message
+      );
 
-      return res.status(201).json({
-        success: false,
-        message: `${message}, but unable to send WhatsApp message.`,
-        user: data,
-      });
+      const smsMessage = `مرحبًا ${name}، تم إنشاء حسابك بنجاح. اسم المستخدم: ${username}`;
+      const smsResponse = await sendSMS(mobile, smsMessage);
+      if (smsResponse.success) {
+        return res.status(201).json({
+          success: true,
+          message: `${message} | SMS sent successfully`,
+          data,
+        });
+      } else {
+        return res.status(201).json({
+          success: false,
+          message: `${message} | User created but failed to send SMS`,
+          data,
+        });
+      }
     } else {
       return res.status(201).json({
         success: false,
         message: message,
+        data: [],
       });
     }
   } catch (error) {
@@ -195,6 +215,7 @@ export const deleteUser = async (req, res) => {
     });
   }
 };
+
 //Get Gov Managers
 export const getGovManagers = async (req, res) => {
   try {
@@ -218,6 +239,7 @@ export const getOpManagers = async (req, res) => {
     res.status(500).json({ message: "Failed to getopMangers", succes: false });
   }
 };
+
 // Get Kap Employees
 export const getKapEmployees = async (req, res) => {
   try {

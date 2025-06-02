@@ -107,7 +107,7 @@ userSchema.statics.createUser = async function (userData) {
     return {
       success: true,
       message: newUser.username + " created Succesfully",
-      data: newUser,
+      data: [],
     };
   } catch (error) {
     console.log(error);
@@ -294,7 +294,7 @@ userSchema.statics.getAllGovManagers = async function () {
       mobile: manager.mobile,
       sector: manager.sectorId?.govSector,
     }));
-    console.log(govManagers);
+
     return {
       success: true,
       data: formattedManagers,
