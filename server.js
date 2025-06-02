@@ -93,16 +93,6 @@ function initializeCleanupJob() {
 
   async function runCleanup() {
     try {
-      const result = await sendSMS({
-        phoneNumber: "+966 50 604 4758",
-        message: "This is Latest Test Message from Wamiq For Kap",
-      });
-
-      if (result.success) {
-        console.log("Message sent:", result.sid);
-      } else {
-        console.error("Failed:", result.error);
-      }
       console.log("🚀 Starting ticket cleanup job...");
       const deletedCount = await Ticket.deleteClosedTickets();
       console.log(`✅ Deleted ${deletedCount} old closed tickets`);
@@ -112,5 +102,5 @@ function initializeCleanupJob() {
   }
 }
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

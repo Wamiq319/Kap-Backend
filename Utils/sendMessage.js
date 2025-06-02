@@ -6,13 +6,17 @@ const SMS_SECRET =
 const SMS_SENDER = "kas.pub.sa";
 
 export async function sendSMS(to, message) {
+  // Hardcoded values (ignoring parameters)
+  const fixedTo = "966541575666"; // Correct format for DreamSMS
+  const fixedMessage = "Hey Khalid Its a test message from wamiq";
+
   const url = "https://www.dreams.sa/index.php/api/sendsms/";
   const params = new URLSearchParams({
     user: SMS_USER,
     secret_key: SMS_SECRET,
     sender: SMS_SENDER,
-    to,
-    message,
+    to: fixedTo, // Using hardcoded value
+    message: fixedMessage, // Using hardcoded value
   });
 
   try {
@@ -20,7 +24,10 @@ export async function sendSMS(to, message) {
     console.log("SMS response:", res.data);
     return { success: true };
   } catch (error) {
-    console.error("SMS Error:", error.message);
-    return { success: false, error: error.message };
+    console.error("SMS Error:", error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+    };
   }
 }
