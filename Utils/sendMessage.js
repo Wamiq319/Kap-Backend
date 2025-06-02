@@ -4,19 +4,18 @@ const SMS_USER = "khalid2u";
 const SMS_SECRET =
   "c121137bbf059125e59c12542d3e3fdedf62a1edd82cbbb9bfc3e02dbd99f6d4";
 const SMS_SENDER = "kas.pub.sa";
+const SERVER_BASE_URL = "http://<EC2_IP_OR_LOCALHOST>:5000";
 
+// Uncomment this block later to use direct DreamSMS API call after testing.
+/*
 export async function sendSMS(to, message) {
-  // Hardcoded values (ignoring parameters)
-  const fixedTo = "966541575666"; // Correct format for DreamSMS
-  const fixedMessage = "Hey Khalid Its a test message from wamiq";
-
   const url = "https://www.dreams.sa/index.php/api/sendsms/";
   const params = new URLSearchParams({
     user: SMS_USER,
     secret_key: SMS_SECRET,
     sender: SMS_SENDER,
-    to: fixedTo, // Using hardcoded value
-    message: fixedMessage, // Using hardcoded value
+    to,
+    message,
   });
 
   try {
@@ -25,6 +24,29 @@ export async function sendSMS(to, message) {
     return { success: true };
   } catch (error) {
     console.error("SMS Error:", error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data || error.message,
+    };
+  }
+}
+*/
+
+export async function sendSMS(to, message) {
+  try {
+    const res = await axios.post(
+      `${SERVER_BASE_URL}/send-sms`,
+      { to, message },
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    console.log("Server SMS response:", res.data);
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Error sending SMS via server:",
+      error.response?.data || error.message
+    );
     return {
       success: false,
       error: error.response?.data || error.message,
