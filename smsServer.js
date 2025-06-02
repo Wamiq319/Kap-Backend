@@ -1,7 +1,6 @@
 import express from "express";
 import axios from "axios";
 import { networkInterfaces } from "os";
-
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -31,10 +30,10 @@ async function sendSMS(to, message) {
     const res = await axios.get(
       `https://www.dreams.sa/index.php/api/sendsms/?${params.toString()}`
     );
-    console.log("SMS response:", res.data);
+    console.log("✅ SMS API response data:", res.data);
     return { success: true, data: res.data };
   } catch (error) {
-    console.error("SMS Error:", error.response?.data || error.message);
+    console.error("❌ SMS API error:", error.response?.data || error.message);
     return { success: false, error: error.response?.data || error.message };
   }
 }
@@ -42,6 +41,10 @@ async function sendSMS(to, message) {
 // POST route to send SMS with JSON body { to: "...", message: "..." }
 app.post("/send-sms", async (req, res) => {
   const { to, message } = req.body;
+
+  console.log(
+    `📥 Incoming request => It is 'to': ${to} | It is 'message': ${message}`
+  );
 
   if (!to || !message) {
     return res.status(400).json({
@@ -51,6 +54,8 @@ app.post("/send-sms", async (req, res) => {
   }
 
   const result = await sendSMS(to, message);
+
+  console.log("📤 Full result from sendSMS:", result);
 
   if (result.success) {
     res.json({
