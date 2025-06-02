@@ -167,7 +167,7 @@ employeeSchema.statics.rsesetEmployeePassword = async function (
     return {
       success: true,
       message: "Password updated successfully",
-      data: [],
+      data: updatedEmployee,
     };
   } catch (error) {
     console.error("Password update error:", error);

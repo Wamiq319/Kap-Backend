@@ -1,4 +1,8 @@
 import Employee from "../Models/Employee.js";
+import { sendSMS } from "../Utils/sendMessage.js";
+import dotenv from "dotenv";
+dotenv.config();
+const appUrl = process.env.APP_URL;
 
 // Create Employee
 export const createEmployee = async (req, res) => {
@@ -11,7 +15,7 @@ export const createEmployee = async (req, res) => {
       data: [],
     });
   }
-  console.log(req.body);
+
   try {
     // Validate mobile number format
 
@@ -25,15 +29,38 @@ export const createEmployee = async (req, res) => {
     });
     console.log(data);
     if (success) {
-      // Ensure mobile number is in international format
-
-      return res.status(201).json({
-        success: false,
-        message: `${message}, but unable to send WhatsApp message.`,
-        user: data,
-      });
+      // Prepare message data for template
+      // console.log(
+      //   `It is data:`,
+      //   data,
+      //   `| It is success:`,
+      //   success,
+      //   `| It is message:`,
+      //   message
+      // );
+      const smsMessage = `مرحبًا ${name}،  
+تم إنشاء حسابك بنجاح.  
+اسم المستخدم: ${username}  
+كلمة المرور: ${password}  
+سجل الدخول من هنا: ${appUrl}`;
+      const smsResponse = await sendSMS(mobile, smsMessage);
+      if (smsResponse.success) {
+        return res.status(201).json({
+          success: true,
+          message: `${message} | SMS sent successfully`,
+          data,
+        });
+      } else {
+        return res.status(201).json({
+          success: false,
+          message: `${message} | User created but failed to send SMS`,
+          data,
+        });
+      }
     } else {
-      return res.status(201).json({ success: false, message: message });
+      return res
+        .status(201)
+        .json({ success: false, message: message, data: [] });
     }
   } catch (error) {
     console.error("Error in createEmployee:", error);
@@ -49,7 +76,7 @@ export const createEmployee = async (req, res) => {
 export const resestEmployeePassword = async (req, res) => {
   const { employeeId } = req.params;
   const { newPassword, oldPassword } = req.body;
-  console.log(req.body);
+
   if (!newPassword)
     return res.status(400).json({
       message: "Old and new password are required",
@@ -64,7 +91,34 @@ export const resestEmployeePassword = async (req, res) => {
       oldPassword
     );
 
-    res.status(200).json({ success, message, data });
+    if (success) {
+      const smsMessage = `مرحبًا ${name}،  
+    تم إنشاء حسابك بنجاح.  
+    اسم المستخدم: ${username}  
+    كلمة المرور: ${password}  
+    سجل الدخول من هنا: ${appUrl}`;
+
+      const smsResponse = await sendSMS(mobile, smsMessage);
+      if (smsResponse.success) {
+        return res.status(201).json({
+          success: true,
+          message: `${message} | SMS sent successfully`,
+          data,
+        });
+      } else {
+        return res.status(201).json({
+          success: false,
+          message: `${message} | User created but failed to send SMS`,
+          data,
+        });
+      }
+    } else {
+      return res.status(201).json({
+        success: false,
+        message: message,
+        data: [],
+      });
+    }
   } catch (error) {
     res.status(500).json({
       data: [],

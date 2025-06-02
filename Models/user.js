@@ -251,7 +251,7 @@ userSchema.statics.resetUserPassword = async function (
     return {
       success: true,
       message: "Password updated successfully",
-      data: [],
+      data: user,
     };
   } catch (error) {
     return { success: false, message: "Internal Server error", data: [] };

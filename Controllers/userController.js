@@ -5,6 +5,7 @@ import { sendSMS } from "../Utils/sendMessage.js";
 import dotenv from "dotenv";
 
 dotenv.config();
+const appUrl = process.env.APP_URL;
 
 export const loginUser = async (req, res) => {
   const { username, password } = req.body;
@@ -85,17 +86,12 @@ export const createUser = async (req, res) => {
     });
 
     if (success) {
-      // Prepare message data for template
-      console.log(
-        `It is data:`,
-        data,
-        `| It is success:`,
-        success,
-        `| It is message:`,
-        message
-      );
+      const smsMessage = `مرحبًا ${name}،  
+تم إنشاء حسابك بنجاح.  
+اسم المستخدم: ${username}  
+كلمة المرور: ${password}  
+سجل الدخول من هنا: ${appUrl}`;
 
-      const smsMessage = `مرحبًا ${name}، تم إنشاء حسابك بنجاح. اسم المستخدم: ${username}`;
       const smsResponse = await sendSMS(mobile, smsMessage);
       if (smsResponse.success) {
         return res.status(201).json({
@@ -185,11 +181,34 @@ export const resetUserPassword = async (req, res) => {
     });
 
   try {
-    const { message, success } = await User.resetUserPassword(
+    const { message, success, data } = await User.resetUserPassword(
       userId,
       newPassword,
       oldPassword
     );
+    console.log("Reset Password Data:", data);
+    if (success) {
+      // Prepare message data for template
+      const smsMessage = `مرحباً ${data.name}،  
+تم إعادة تعيين كلمة المرور بنجاح.  
+كلمة المرور الجديدة: ${newPassword}  
+اسم المستخدم: ${data.username}  
+سجل الدخول من هنا: ${appUrl}`;
+      const smsResponse = await sendSMS(data.mobile, smsMessage);
+      if (smsResponse.success) {
+        return res.status(200).json({
+          message: `${message} | SMS sent successfully`,
+          success: success,
+          data: [],
+        });
+      } else {
+        return res.status(200).json({
+          message: `${message} | User updated but failed to send SMS`,
+          success: success,
+          data: [],
+        });
+      }
+    }
     return res
       .status(200)
       .json({ message: message, data: [], success: success });
