@@ -7,7 +7,7 @@ const SMS_SENDER = "kas.pub.sa";
 const SERVER_BASE_URL = "http://51.20.40.255:3000";
 
 // Uncomment this block later to use direct DreamSMS API call after testing.
-/*
+
 export async function sendSMS(to, message) {
   const url = "https://www.dreams.sa/index.php/api/sendsms/";
   const params = new URLSearchParams({
@@ -30,8 +30,8 @@ export async function sendSMS(to, message) {
     };
   }
 }
-*/
 
+/*
 export async function sendSMS(to, message) {
   try {
     const res = await axios.post(
@@ -52,4 +52,4 @@ export async function sendSMS(to, message) {
       error: error.response?.data || error.message,
     };
   }
-}
+}*/

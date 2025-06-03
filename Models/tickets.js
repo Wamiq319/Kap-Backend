@@ -603,4 +603,29 @@ ticketSchema.statics.addNote = async function (ticketId, addedBy, text) {
   }
 };
 
+ticketSchema.statics.getOperatorDetails = async function (operatorId) {
+  const OpCompany = mongoose.model("OpCompany");
+  return await OpCompany.findById(operatorId).select(
+    "mobile adminName opCompany"
+  );
+};
+
+ticketSchema.statics.getRequestorDetails = async function (requestorId) {
+  const GovSector = mongoose.model("GovSector");
+  return await GovSector.findById(requestorId).select(
+    "mobile adminName govSector"
+  );
+};
+
+ticketSchema.statics.getAssignedEmployeeDetails = async function (ticketId) {
+  const ticket = await this.findById(ticketId)
+    .populate("assignedTo.opEmployee", "mobile name")
+    .populate("assignedTo.govEmployee", "mobile name");
+
+  return {
+    opEmployee: ticket.assignedTo?.opEmployee,
+    govEmployee: ticket.assignedTo?.govEmployee,
+  };
+};
+
 export default mongoose.model("Ticket", ticketSchema);

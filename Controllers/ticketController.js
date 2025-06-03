@@ -1,4 +1,26 @@
 import Ticket from "../Models/tickets.js";
+import { sendSMS } from "../Utils/sendMessage.js";
+import dotenv from "dotenv";
+dotenv.config();
+
+const appUrl = process.env.APP_URL;
+
+const sendTicketNotification = async (mobile, message) => {
+  if (!mobile) {
+    console.warn("Notification skipped - no mobile number provided");
+    return { success: false, message: "No mobile number provided" };
+  }
+
+  try {
+    const result = await sendSMS(mobile, message);
+    console.log(`SMS sent to ${mobile}:`, result);
+    return result;
+  } catch (error) {
+    console.error("SMS sending error:", error);
+    return { success: false, message: "Failed to send SMS" };
+  }
+};
+
 //Create Ticket
 export const createTicket = async (req, res) => {
   try {
@@ -24,7 +46,6 @@ export const createTicket = async (req, res) => {
         success: false,
       });
     }
-    console;
 
     const { success, data, message } = await Ticket.createEntity({
       operator,
@@ -35,12 +56,37 @@ export const createTicket = async (req, res) => {
       ticketBuilder,
     });
 
+    if (success) {
+      const [operatorDetails, requestorDetails] = await Promise.all([
+        Ticket.getOperatorDetails(operator),
+        Ticket.getRequestorDetails(requestor),
+      ]);
+
+      const operatorMessage = `تم إنشاء تذكرة جديدة لمؤسستك.
+نوع التذكرة: ${requestType}
+تم الإنشاء بواسطة: ${ticketBuilder} (موظف كاب)
+المشغل: ${operatorDetails?.adminName} (${operatorDetails?.opCompany})
+رابط التذكرة: ${appUrl}`;
+
+      const requestorMessage = `تم إنشاء تذكرة جديدة لمؤسستك.
+نوع التذكرة: ${requestType}
+تم الإنشاء بواسطة: ${ticketBuilder} (موظف كاب)
+المشغل: ${operatorDetails?.adminName} (${operatorDetails?.opCompany})
+رابط التذكرة: ${appUrl}`;
+
+      await Promise.all([
+        sendTicketNotification(operatorDetails?.mobile, operatorMessage),
+        sendTicketNotification(requestorDetails?.mobile, requestorMessage),
+      ]);
+    }
+
     res.status(200).json({ message: message, success: success, data: data });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Error creating Ticket" });
   }
 };
+
 // Get Tickets
 export const getTickets = async (req, res) => {
   try {
@@ -100,9 +146,26 @@ export const updateAssignedTo = async (req, res) => {
       assignedToId,
       assigneeType
     );
+    const employee = await mongoose
+      .model("Employee")
+      .findById(assignedToId)
+      .select("mobile name");
 
-    if (!result.success) {
-      return res.status(404).json(result);
+    const ticket = await Ticket.findById(ticketId)
+      .populate("operator", "opCompany")
+      .populate("requestor", "govSector");
+
+    if (employee?.mobile) {
+      const smsMessage = `تم تعيينك على تذكرة جديدة  
+الجهة: ${
+        assigneeType === "opEmployee"
+          ? ticket.requestor?.govSector
+          : ticket.operator?.opCompany
+      }  
+نوع الطلب: ${ticket.requestType}  
+رابط التذكرة: ${appUrl}`;
+
+      await sendTicketNotification(employee.mobile, smsMessage);
     }
 
     res.status(200).json(result);
@@ -181,6 +244,33 @@ export const updateStatus = async (req, res) => {
       acceptedBy,
       expectedCompletionDate
     );
+
+    if (result.success) {
+      const ticket = await Ticket.findById(ticketId)
+        .populate("operator", "mobile opCompany")
+        .populate("requestor", "mobile govSector");
+
+      let message = "";
+      if (status === "In Progress") {
+        message = `تم بدء العمل على تذكرتك  
+رقم التذكرة: ${ticket.ticketNumber}  
+الحالة: جاري العمل  
+رابط التذكرة: ${appUrl}`;
+      } else if (status === "Completed") {
+        message = `تم إكمال تذكرتك  
+رقم التذكرة: ${ticket.ticketNumber}  
+الحالة: مكتمل  
+رابط التذكرة: ${appUrl}`;
+      }
+
+      // Send to both parties if message exists
+      if (message) {
+        await Promise.all([
+          sendTicketNotification(ticket.operator?.mobile, message),
+          sendTicketNotification(ticket.requestor?.mobile, message),
+        ]);
+      }
+    }
 
     res.status(200).json(result);
   } catch (error) {
